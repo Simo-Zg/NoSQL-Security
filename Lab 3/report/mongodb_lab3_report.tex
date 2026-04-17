@@ -1,0 +1,596 @@
+
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[a4paper,margin=2.35cm,headheight=24pt]{geometry}
+\usepackage[french]{babel}
+\usepackage{lmodern}
+\usepackage[table]{xcolor}
+\usepackage{graphicx}
+\usepackage{booktabs,longtable,tabularx,array}
+\usepackage{caption,subcaption,float}
+\usepackage{hyperref}
+\usepackage{bookmark}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{enumitem}
+\usepackage[most]{tcolorbox}
+\usepackage{fvextra}
+\usepackage{microtype}
+\usepackage{parskip}
+\usepackage{titlesec}
+\usepackage{ragged2e}
+\usepackage{needspace}
+\usepackage{tocloft}
+\usepackage{etoolbox}
+
+\definecolor{SectionBlue}{HTML}{1F4E8C}
+\definecolor{BoxBlueBg}{HTML}{F5F7FA}
+\definecolor{BoxOrangeBg}{HTML}{FFF5EB}
+\definecolor{BoxOrange}{HTML}{E67E22}
+\definecolor{BoxGreenBg}{HTML}{EEF8F0}
+\definecolor{BoxGreen}{HTML}{2E8B57}
+\definecolor{SoftGray}{HTML}{F6F6F6}
+\definecolor{GrayLight}{HTML}{F6F8FA}
+\definecolor{RuleGray}{HTML}{CFCFCF}
+\definecolor{CodeBg}{HTML}{F5F5F5}
+\definecolor{CodeFrame}{HTML}{BDBDBD}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=SectionBlue,
+  urlcolor=SectionBlue,
+  pdftitle={Rapport detaille de realisation - Seance 3 MongoDB},
+  pdfauthor={OpenAI},
+  pdfsubject={Rapport technique avec preuves d'execution},
+  pdfcreator={LuaLaTeX}
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\textcolor{SectionBlue}{Rapport de réalisation --- MongoDB / Séance 3}}
+\rhead{\textcolor{SectionBlue}{\thepage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{black}\leaders\hrule height \headrulewidth\hfill}}
+\cfoot{}
+
+\fancypagestyle{plain}{
+  \fancyhf{}
+  \lhead{\textcolor{SectionBlue}{Rapport de réalisation --- MongoDB / Séance 3}}
+  \rhead{\textcolor{SectionBlue}{\thepage}}
+  \renewcommand{\headrulewidth}{0.4pt}
+  \renewcommand{\headrule}{\hbox to\headwidth{\color{black}\leaders\hrule height \headrulewidth\hfill}}
+  \cfoot{}
+}
+
+\renewcommand{\contentsname}{Table des matières}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+\setlength{\cftbeforesecskip}{7pt}
+\setlength{\cftbeforesubsecskip}{2pt}
+\renewcommand{\cftsecfont}{\color{SectionBlue}\bfseries}
+\renewcommand{\cftsecpagefont}{\bfseries}
+\renewcommand{\cftsubsecfont}{\color{SectionBlue}}
+\renewcommand{\cfttoctitlefont}{\Huge\bfseries\color{SectionBlue}}
+\renewcommand{\cftaftertoctitle}{\hfill}
+
+\titleformat{\section}{\Large\bfseries\color{SectionBlue}}{\thesection}{0.75em}{}
+\titleformat{\subsection}{\large\bfseries\color{SectionBlue}}{\thesubsection}{0.75em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries\color{SectionBlue}}{\thesubsubsection}{0.75em}{}
+\titlespacing*{\section}{0pt}{1.3em}{0.7em}
+\titlespacing*{\subsection}{0pt}{1.0em}{0.45em}
+\titlespacing*{\subsubsection}{0pt}{0.9em}{0.35em}
+
+\setlist[itemize]{topsep=2pt,itemsep=2pt,leftmargin=1.5em}
+\setlist[enumerate]{topsep=2pt,itemsep=2pt,leftmargin=1.7em}
+\newcolumntype{Y}{>{\RaggedRight\arraybackslash}X}
+\newcolumntype{C}[1]{>{\Centering\arraybackslash}p{#1}}
+\renewcommand{\arraystretch}{1.16}
+
+\DeclareCaptionLabelSeparator{endash}{\space--\space}
+\captionsetup{font=small,labelfont=sc,labelsep=endash}
+
+\tcbset{enhanced,breakable,boxrule=0.75pt,arc=8pt,left=10pt,right=10pt,top=8pt,bottom=8pt}
+
+\newtcolorbox{summarybox}[1][]{%
+  colback=BoxBlueBg,
+  colframe=SectionBlue,
+  before upper={\ifstrempty{#1}{}{\textbf{#1}.\ }},
+}
+
+\newtcolorbox{warnbox}[1][]{%
+  colback=BoxOrangeBg,
+  colframe=BoxOrange,
+  before upper={\ifstrempty{#1}{}{\textbf{#1}.\ }},
+}
+
+\newtcolorbox{resultbox}[1][]{%
+  colback=BoxGreenBg,
+  colframe=BoxGreen,
+  before upper={\ifstrempty{#1}{}{\textbf{#1}.\ }},
+}
+
+\newcommand{\statusok}{\textcolor{BoxGreen}{\textbf{Oui}}}
+\newcommand{\statuspartial}{\textcolor{BoxOrange}{\textbf{Partiel}}}
+\newcommand{\statusno}{\textcolor{red!70!black}{\textbf{Non démontré}}}
+
+\newcommand{\evidencepage}[3]{%
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.90\linewidth,height=0.68\textheight,keepaspectratio]{evidence/#1}
+\caption{#2}
+\end{figure}
+\noindent\textbf{Commentaire d'analyse.} #3
+\clearpage
+}
+
+\begin{document}
+\pagenumbering{gobble}
+
+\begin{titlepage}
+\centering
+\vspace*{1.6cm}
+
+{\fontsize{28}{34}\selectfont\bfseries\color{SectionBlue}Rapport détaillé de réalisation\par}
+\vspace{0.55cm}
+{\fontsize{18}{22}\selectfont Module NoSQL Security --- Séance 3\par}
+\vspace{0.35cm}
+{\Large Authentification, RBAC, exposition réseau et hygiène de configuration\par}
+
+\vspace{1.0cm}
+\begin{summarybox}[Objet du document]
+Ce rapport reconstruit le travail effectivement réalisé à partir du support de séance en HTML et de l'archive de captures d'écran fournie. L'objectif est de produire un livrable exploitable tel quel, rédigé en LaTeX / LuaLaTeX, propre à l'impression et suffisamment détaillé pour documenter l'exécution des travaux pratiques, les tests autorisés / refusés et l'état réel du hardening observé.
+\end{summarybox}
+
+\vfill
+\begin{minipage}{0.78\textwidth}
+\centering
+\begin{tabular}{>{\bfseries}p{4.8cm}p{7.2cm}}
+Support pédagogique & \texttt{seance3\_nosql\_security\_Partie3(2).html} \\
+Preuves visuelles & \texttt{Lecture 3 Screenshots.zip} (16 captures) \\
+Base de travail & \texttt{soc\_lite} \\
+Environnement visé & Docker + MongoDB 7 / mongosh \\
+Livrables produits & PDF + code source LuaLaTeX \\
+\end{tabular}
+\end{minipage}
+
+\vfill
+\end{titlepage}
+
+\clearpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+\tableofcontents
+\clearpage
+\section{Objet du rapport}
+
+Le présent rapport documente le travail réalisé dans le cadre de la \textbf{Séance 3 -- Hardening MongoDB}. L'objectif de la séance était de démontrer, sur une base NoSQL de type SOC, la différence entre une instance MongoDB exposée sans authentification et une instance correctement durcie par :
+\begin{itemize}
+  \item l'activation de l'authentification,
+  \item la création d'un administrateur initial,
+  \item la gestion correcte de la base d'authentification (\texttt{authenticationDatabase}),
+  \item la mise en place d'un contrôle d'accès par rôles (RBAC),
+  \item la validation explicite des opérations \emph{autorisées} et \emph{refusées}.
+\end{itemize}
+
+Le support pédagogique attendait un mini-rapport ``avant / après'' ainsi qu'une checklist de hardening. Ce document remplit cette finalité et ajoute une analyse de cohérence entre la politique visée et les résultats réellement observés.
+
+\section{Sources et méthode de reconstruction}
+
+\subsection{Corpus exploité}
+
+Deux sources ont été exploitées :
+\begin{enumerate}
+  \item le support HTML de la séance, qui définit les objectifs, les activités, les commandes attendues et les contrôles à vérifier ;
+  \item les 16 captures d'écran fournies, qui permettent de reconstituer chronologiquement les manipulations effectivement exécutées.
+\end{enumerate}
+
+\subsection{Approche d'analyse}
+
+La reconstruction a été menée selon la logique suivante :
+\begin{itemize}
+  \item ordonner les captures par horodatage ;
+  \item identifier, pour chaque capture, la commande exécutée, le contexte MongoDB visé et le résultat obtenu ;
+  \item regrouper les preuves en trois blocs : \textbf{exposition insecure}, \textbf{authentification}, \textbf{RBAC / moindre privilège} ;
+  \item comparer les résultats observés avec la cible de sécurité du support ;
+  \item signaler les écarts significatifs, notamment la limite des rôles built-in \texttt{read} et \texttt{readWrite} sur la collection \texttt{users}.
+\end{itemize}
+\newpage
+\begin{summarybox}[Synthèse immédiate]
+Le jeu de preuves fourni documente de manière convaincante l'exécution des trois activités principales du support :
+\begin{enumerate}
+  \item démonstration d'un MongoDB \emph{insecure} ;
+  \item activation et validation de l'authentification ;
+  \item conception et test d'une politique RBAC.
+\end{enumerate}
+En revanche, la \textbf{correction finale du devoir maison} -- à savoir la création de rôles personnalisés supplémentaires pour empêcher l'accès à \texttt{users} aux comptes \texttt{soc\_app} et \texttt{soc\_analyst\_ro} -- n'apparaît pas comme exécutée dans les captures. Cette partie reste donc \textbf{à compléter}.
+\end{summarybox}
+
+\section{Environnement et périmètre technique}
+
+Le travail est réalisé dans un environnement Docker avec \texttt{mongosh}. La base cible est \texttt{soc\_lite}. Les objets manipulés au cours des démonstrations sont :
+\begin{itemize}
+  \item \texttt{security\_logs} : journaux de sécurité,
+  \item \texttt{incidents} : incidents SOC,
+  \item \texttt{users} : référentiel utilisateurs.
+\end{itemize}
+
+Trois profils fonctionnels sont ensuite modélisés :
+\begin{itemize}
+  \item \texttt{soc\_app} : compte applicatif de collecte,
+  \item \texttt{soc\_analyst\_ro} : analyste en lecture,
+  \item \texttt{soc\_manager} : responsable incidents.
+\end{itemize}
+
+\section{Chronologie détaillée des travaux réalisés}
+
+\subsection{Phase 1 -- Démonstration d'une instance MongoDB insecure}
+
+La première séquence de captures montre le lancement d'une instance MongoDB sans authentification et avec exposition réseau large. Cette phase répond à l'objectif pédagogique de visualiser le risque d'un service accessible sans contrôle.
+
+\begin{tcolorbox}[breakable,colback=CodeBg,colframe=CodeFrame,title=Extrait de commandes observées]
+\begin{Verbatim}[fontsize=\small,breaklines,breakanywhere]
+docker run -d --name mongo_insecure -p 27017:27017 mongo:7
+docker exec -it mongo_insecure mongosh
+
+use soc_lite
+db.security_logs.find().limit(3)
+db.incidents.drop()
+db.dropDatabase()
+\end{Verbatim}
+\end{tcolorbox}
+
+\subsubsection*{Constats techniques}
+\begin{itemize}
+  \item Le port \texttt{27017} est publié sans restriction d'interface via \texttt{-p 27017:27017}.
+  \item La connexion à \texttt{mongosh} est réalisée \textbf{sans identifiants}.
+  \item Des opérations destructrices sont acceptées : suppression de la collection \texttt{incidents}, puis suppression de la base \texttt{soc\_lite}.
+\end{itemize}
+
+\begin{resultbox}[Résultat de sécurité]
+Cette séquence établit clairement qu'une instance MongoDB démarrée sans authentification autorise la lecture, l'écriture et même la destruction de données par tout client ayant accès au port d'écoute.
+\end{resultbox}
+
+\subsubsection*{Preuve complémentaire d'écriture et d'administration anonymes}
+
+Une seconde capture confirme que l'accès anonyme permet non seulement la lecture mais aussi l'insertion et l'administration du serveur :
+
+\begin{tcolorbox}[breakable,colback=CodeBg,colframe=CodeFrame,title=Commandes observées]
+\begin{Verbatim}[fontsize=\small,breaklines,breakanywhere]
+use soc_lite
+db.security_logs.insertOne({
+  timestamp: new Date(),
+  source_ip: "10.0.0.99",
+  event_type: "test_insecure",
+  message: "Ce document a été inséré sans authentification"
+})
+
+db.security_logs.find({ event_type: "test_insecure" })
+db.adminCommand({ listDatabases: 1 })
+\end{Verbatim}
+\end{tcolorbox}
+
+Le retour \texttt{acknowledged: true} ainsi que la réussite de \texttt{listDatabases} prouvent qu'un client non authentifié possède un contrôle complet sur l'instance.
+
+\subsection{Phase 2 -- Activation de l'authentification et validation du compte administrateur}
+
+La séquence suivante montre le basculement vers une instance sécurisée.
+
+\begin{tcolorbox}[breakable,colback=CodeBg,colframe=CodeFrame,title=Commandes observées (version sécurisée)]
+\begin{Verbatim}[fontsize=\small,breaklines,breakanywhere]
+docker rm -f mongo_insecure
+
+docker run -d --name mongo_secure \
+  -p 127.0.0.1:27017:27017 \
+  -e MONGO_INITDB_ROOT_USERNAME=<admin> \
+  -e MONGO_INITDB_ROOT_PASSWORD=<mot_de_passe_admin> \
+  mongo:7
+
+docker exec -it mongo_secure mongosh
+use soc_lite
+db.security_logs.find()
+\end{Verbatim}
+\end{tcolorbox}
+
+\subsubsection*{Constats techniques}
+\begin{itemize}
+  \item Le port est cette fois lié à \texttt{127.0.0.1}, ce qui réduit l'exposition réseau côté hôte.
+  \item Toute opération sur les données retourne \texttt{MongoServerError[Unauthorized]: Command find requires authentication}.
+  \item La protection n'est donc plus théorique : elle est validée par un refus explicite.
+\end{itemize}
+
+L'administrateur initial est ensuite utilisé avec succès :
+
+\begin{tcolorbox}[breakable,colback=CodeBg,colframe=CodeFrame,title=Validation du compte administrateur]
+\begin{Verbatim}[fontsize=\small,breaklines,breakanywhere]
+docker exec -it mongo_secure mongosh -u <admin> -p <mot_de_passe_admin>
+db.adminCommand({ listDatabases: 1 })
+\end{Verbatim}
+\end{tcolorbox}
+
+Le résultat montre la liste des bases disponibles, ce qui confirme :
+\begin{enumerate}
+  \item que l'authentification est activée ;
+  \item que le compte administrateur initial fonctionne ;
+  \item que la protection distingue désormais clairement un accès anonyme d'un accès authentifié.
+\end{enumerate}
+
+\subsection{Phase 3 -- Validation de la création manuelle de l'administrateur initial}
+
+Une autre séquence montre une variante intéressante : la création manuelle de l'administrateur sur un conteneur lancé avec \texttt{mongod --auth --bind\_ip\_all}. Cette partie démontre la bonne compréhension du mécanisme de \emph{localhost exception}.
+
+\begin{tcolorbox}[breakable,colback=CodeBg,colframe=CodeFrame,title=Séquence manuelle observée]
+\begin{Verbatim}[fontsize=\small,breaklines,breakanywhere]
+docker run -d --name mongo_manual -p 127.0.0.1:27017:27017 mongo:7 \
+  mongod --auth --bind_ip_all
+
+docker exec -it mongo_manual mongosh
+use admin
+db.createUser({
+  user: "<admin>",
+  pwd: "<mot_de_passe_admin>",
+  roles: [{ role: "root", db: "admin" }]
+})
+
+quit()
+docker exec -it mongo_manual mongosh -u <admin> -p <mot_de_passe_admin>
+db.adminCommand({ listDatabases: 1 })
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{resultbox}[Intérêt de cette étape]
+Cette démonstration va au-delà de la simple utilisation des variables d'environnement Docker : elle montre que l'étudiant a également validé le scénario pédagogique de création manuelle du premier compte root.
+\end{resultbox}
+
+\subsection{Phase 4 -- Validation de l'authenticationDatabase}
+
+La notion de \texttt{authenticationDatabase} est explicitement testée dans les captures. Un compte \texttt{soc\_app} est utilisé avec la bonne base d'authentification, puis avec une base erronée.
+
+\begin{tcolorbox}[breakable,colback=CodeBg,colframe=CodeFrame,title=Tests observés]
+\begin{Verbatim}[fontsize=\small,breaklines,breakanywhere]
+docker exec -it mongo_manual mongosh -u soc_app -p <mot_de_passe_app> \
+  --authenticationDatabase soc_lite
+
+use soc_lite
+db.security_logs.find()
+\end{Verbatim}
+\end{tcolorbox}
+
+La connexion réussit lorsque la base d'authentification est \texttt{soc\_lite}.
+
+\begin{tcolorbox}[breakable,colback=CodeBg,colframe=CodeFrame,title=Erreur observée avec mauvaise authDB]
+\begin{Verbatim}[fontsize=\small,breaklines,breakanywhere]
+docker exec -it mongo_manual mongosh -u soc_app -p <mot_de_passe_app> \
+  --authenticationDatabase admin
+
+MongoServerError: Authentication failed.
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{resultbox}[Conclusion de la phase]
+La preuve est nette : le couple \texttt{(username, authenticationDatabase)} fait partie intégrante de l'identité MongoDB. La compréhension de ce point est démontrée opérationnellement.
+\end{resultbox}
+
+\subsection{Phase 5 -- Construction de la politique RBAC}
+
+\subsubsection{Création du rôle personnalisé \texttt{incidentManager}}
+
+L'étape suivante consiste à créer un rôle personnalisé limité à la collection \texttt{incidents} :
+
+\begin{tcolorbox}[breakable,colback=CodeBg,colframe=CodeFrame,title=Création du rôle personnalisé]
+\begin{Verbatim}[fontsize=\small,breaklines,breakanywhere]
+use soc_lite
+db.createRole({
+  role: "incidentManager",
+  privileges: [
+    {
+      resource: { db: "soc_lite", collection: "incidents" },
+      actions: ["find", "insert", "update", "remove"]
+    }
+  ],
+  roles: []
+})
+\end{Verbatim}
+\end{tcolorbox}
+
+Cette étape est structurante pour la suite : elle matérialise le passage d'un modèle de droits générique à un modèle de droits finement ciblé.
+
+\subsubsection{Insertion des données de test}
+
+Les captures montrent ensuite l'insertion d'un jeu de données cohérent pour pouvoir tester les droits :
+\begin{itemize}
+  \item trois événements dans \texttt{security\_logs} (échecs et succès SSH),
+  \item deux incidents dans \texttt{incidents},
+  \item deux utilisateurs dans \texttt{users}.
+\end{itemize}
+
+Les objets visibles incluent notamment :
+\begin{itemize}
+  \item l'incident \texttt{INC-2026-0042} : brute-force SSH sur \texttt{srv-web-01},
+  \item l'incident \texttt{INC-2026-0041} : scan de ports depuis \texttt{192.168.5.200},
+  \item les utilisateurs \texttt{analyst\_dupont} et \texttt{analyst\_martin}.
+\end{itemize}
+
+\subsubsection{Création des comptes applicatifs et métiers}
+
+Les comptes suivants sont observés :
+\begin{itemize}
+  \item \texttt{soc\_analyst\_ro} avec le rôle built-in \texttt{read} sur \texttt{soc\_lite},
+  \item \texttt{soc\_manager} avec le rôle personnalisé \texttt{incidentManager},
+  \item \texttt{soc\_app} avec le rôle built-in \texttt{readWrite} sur \texttt{soc\_lite}.
+\end{itemize}
+
+Les commandes sont visibles dans les captures et confirmées par \texttt{db.getUsers()} et \texttt{db.getRoles()}.
+
+\subsection{Phase 6 -- Tests d'accès par profil}
+
+\subsubsection{\texttt{soc\_analyst\_ro} : lecture autorisée, écriture refusée, mais lecture de \texttt{users} possible}
+
+Les preuves montrent la séquence suivante :
+\begin{itemize}
+  \item lecture des logs : \textbf{autorisée},
+  \item lecture des incidents de sévérité \texttt{high} : \textbf{autorisée},
+  \item insertion dans \texttt{security\_logs} : \textbf{refusée},
+  \item suppression d'un incident : \textbf{refusée},
+  \item lecture de \texttt{users} : \textbf{autorisée en pratique}.
+\end{itemize}
+
+\begin{warnbox}[Observation critique]
+Le support pédagogique visait une politique où l'analyste n'accède pas à \texttt{users}. Or la capture montre que \texttt{db.users.find()} retourne bien les deux documents. Ce comportement est cohérent avec MongoDB : le rôle built-in \texttt{read} sur une base s'applique à \textbf{toutes les collections} de cette base. Il n'est donc pas suffisamment restrictif pour satisfaire le moindre privilège sur \texttt{soc\_lite}.
+\end{warnbox}
+
+\subsubsection{\texttt{soc\_manager} : rôle personnalisé correctement borné}
+
+La séquence pour \texttt{soc\_manager} est la plus conforme à la politique cible :
+\begin{itemize}
+  \item lecture des incidents : \textbf{autorisée},
+  \item mise à jour de \texttt{INC-2026-0042} : \textbf{autorisée} (\texttt{modifiedCount: 1}),
+  \item lecture des logs : \textbf{refusée},
+  \item lecture de \texttt{users} : \textbf{refusée},
+  \item commande d'administration \texttt{listDatabases} : \textbf{refusée}.
+\end{itemize}
+
+\begin{resultbox}[Évaluation]
+Le rôle personnalisé \texttt{incidentManager} réalise effectivement une séparation propre des privilèges : accès en lecture/écriture sur \texttt{incidents} uniquement, sans débordement vers les logs, les utilisateurs ou l'administration du serveur.
+\end{resultbox}
+
+\subsubsection{\texttt{soc\_app} : fonctionnement applicatif validé, mais privilèges trop larges}
+
+La séquence observée pour \texttt{soc\_app} montre :
+\begin{itemize}
+  \item insertion d'un nouvel événement \texttt{firewall\_drop} dans \texttt{security\_logs} : \textbf{autorisée},
+  \item lecture des incidents ouverts : \textbf{autorisée},
+  \item lecture de \texttt{users} : \textbf{autorisée en pratique},
+  \item commande \texttt{listDatabases} : \textbf{refusée}.
+\end{itemize}
+\newpage
+\begin{warnbox}[Point de sécurité restant]
+Le compte \texttt{soc\_app} ne peut pas administrer l'instance, ce qui est positif. En revanche, le rôle built-in \texttt{readWrite} sur \texttt{soc\_lite} lui donne aussi accès à \texttt{users}. Le fonctionnement applicatif est donc validé, mais la politique de moindre privilège n'est pas totalement atteinte.
+\end{warnbox}
+
+\section{Analyse ``avant / après'' du durcissement}
+
+\subsection{Avant durcissement}
+
+\begin{longtable}{p{4.4cm}p{9.8cm}}
+\toprule
+\textbf{Élément} & \textbf{État observé} \\
+\midrule
+Authentification & Absente ; connexion anonyme possible \\
+Port MongoDB & Publié sans restriction via \texttt{-p 27017:27017} \\
+Lecture de données & Libre, sans identifiants \\
+Écriture de données & Libre, sans identifiants \\
+Suppression / destruction & Possible via \texttt{drop()} et \texttt{dropDatabase()} \\
+Administration & Possible anonymement via \texttt{listDatabases} \\
+\bottomrule
+\end{longtable}
+
+\subsection{Après durcissement}
+
+\begin{longtable}{p{4.4cm}p{9.8cm}}
+\toprule
+\textbf{Élément} & \textbf{État observé} \\
+\midrule
+Authentification & Activée ; accès anonyme refusé \\
+Port MongoDB & Restreint à \texttt{127.0.0.1} côté publication Docker \\
+Compte root & Fonctionnel pour l'administration \\
+authDB & Testée avec succès et échec contrôlé \\
+RBAC personnalisé & Mis en place pour \texttt{soc\_manager} \\
+Séparation applicative & Partielle : \texttt{soc\_manager} bien borné, \texttt{soc\_analyst\_ro} et \texttt{soc\_app} trop larges via rôles built-in \\
+Administration par comptes non-root & Refusée \\
+\bottomrule
+\end{longtable}
+
+\section{Checklist de durcissement et état d'avancement}
+
+\rowcolors{2}{GrayLight}{white}
+\begin{longtable}{p{6cm}C{2.4cm}p{5.8cm}}
+\toprule
+\textbf{Contrôle} & \textbf{État} & \textbf{Justification fondée sur les preuves} \\
+\midrule
+Démonstration du risque MongoDB sans auth & \statusok & Lecture, insertion, suppression de collection et \texttt{dropDatabase()} observés sans authentification \\
+Activation de l'authentification & \statusok & Refus explicite des commandes anonymes \\
+Création d'un compte administrateur initial & \statusok & Compte root validé sur instance sécurisée et instance manuelle \\
+Validation de \texttt{authenticationDatabase} & \statusok & Succès sur \texttt{soc\_lite} et échec sur \texttt{admin} pour \texttt{soc\_app} \\
+Restriction de l'exposition réseau & \statusok & Publication Docker liée à \texttt{127.0.0.1} \\
+Création d'un rôle personnalisé fin & \statusok & \texttt{incidentManager} créé et testé \\
+Création d'un profil analyste en lecture & \statuspartial & Lecture et refus d'écriture validés, mais accès à \texttt{users} encore possible \\
+Création d'un profil manager limité aux incidents & \statusok & Accès incidents validé, logs/users/admin refusés \\
+Création d'un profil applicatif limité & \statuspartial & Fonction applicative validée, mais accès à \texttt{users} encore possible \\
+Gestion des secrets via \texttt{.env} / externalisation & \statusno & Aucune preuve fournie dans les captures \\
+Checklist signée & \statusno & Non visible dans les éléments transmis \\
+Devoir maison de correction finale des rôles built-in & \statusno & Pas de preuve d'une remédiation effective pour exclure \texttt{users} \\
+\bottomrule
+\end{longtable}
+
+\section{Évaluation finale}
+
+\subsection{Ce qui est pleinement réussi}
+
+Le travail remis montre une maîtrise solide des fondamentaux opérationnels de sécurité MongoDB :
+\begin{itemize}
+  \item l'étudiant a \textbf{prouvé} le danger d'une instance sans authentification ;
+  \item il a \textbf{basculé vers une instance protégée} et vérifié le refus d'accès anonyme ;
+  \item il a \textbf{créé et utilisé} un administrateur initial ;
+  \item il a \textbf{validé la notion d'authDB} avec un test positif et un test négatif ;
+  \item il a \textbf{construit un rôle personnalisé pertinent} pour la gestion des incidents ;
+  \item il a \textbf{testé systématiquement} les opérations autorisées et refusées selon chaque profil.
+\end{itemize}
+
+\subsection{Ce qui reste à finaliser pour un moindre privilège strict}
+
+Le point principal restant concerne la collection \texttt{users}. Les rôles built-in \texttt{read} et \texttt{readWrite} sont trop larges pour satisfaire la politique métier visée. Pour achever le devoir de durcissement, il faudrait :
+\begin{enumerate}
+  \item remplacer \texttt{read} pour \texttt{soc\_analyst\_ro} par un rôle personnalisé limitant la lecture à \texttt{security\_logs} et \texttt{incidents} ;
+  \item remplacer \texttt{readWrite} pour \texttt{soc\_app} par un rôle personnalisé limitant l'écriture à \texttt{security\_logs} et, si nécessaire, la lecture ciblée de \texttt{incidents} ;
+  \item conserver \texttt{users} hors du périmètre des comptes applicatifs et métiers ;
+  \item externaliser les mots de passe dans un \texttt{.env} ou un gestionnaire de secrets au lieu de les laisser visibles en ligne de commande.
+\end{enumerate}
+
+\begin{warnbox}[Formulation honnête de conclusion]
+Sur la base des preuves fournies, le \textbf{TP principal est réalisé avec succès}. La partie \textbf{devoir maison} est en revanche \textbf{seulement préparée} par l'observation du problème, mais \textbf{non démontrée comme effectivement terminée} dans les captures reçues.
+\end{warnbox}
+
+\section{Conclusion}
+
+Ce rapport met en évidence une progression nette entre un état initial \emph{insecure} et un état partiellement durci, avec authentification, compte administrateur, contrôle d'accès RBAC et tests de validation. La réalisation est techniquement sérieuse et pédagogique, car elle ne se limite pas à ``faire marcher'' les commandes : elle vérifie les effets attendus et les refus de sécurité.
+
+Le résultat le plus important, du point de vue cybersécurité, est aussi le plus instructif : les rôles built-in semblent pratiques, mais ils ne suffisent pas toujours à respecter le \emph{least privilege}. Le travail fourni le démontre concrètement. C'est précisément ce type de constat qui transforme un TP en apprentissage de sécurité utile.
+
+\appendix
+\clearpage
+\section{Annexe A -- Journal de preuves visuelles}
+
+Cette annexe reprend l'intégralité des captures fournies et les annote de manière synthétique. L'objectif est de conserver la traçabilité des manipulations réellement exécutées.
+
+\evidencepage{fig01.png}{Capture 1 -- Instance \texttt{mongo\_insecure} et destruction anonyme de la base.}{La capture montre le lancement d'un conteneur MongoDB sans authentification, la connexion anonyme via \texttt{mongosh}, puis des opérations destructrices acceptées : \texttt{db.incidents.drop()} retourne \texttt{true} et \texttt{db.dropDatabase()} supprime \texttt{soc\_lite}. C'est la preuve la plus forte du risque initial.}
+
+\evidencepage{fig02.png}{Capture 2 -- Insertion anonyme et commande d'administration sur l'instance insecure.}{Un document \texttt{test\_insecure} est inséré sans identifiants dans \texttt{security\_logs}, puis retrouvé avec succès. La commande \texttt{db.adminCommand(\{ listDatabases: 1 \})} réussit également. Cela établit la compromission totale possible en mode non authentifié.}
+
+\evidencepage{fig03.png}{Capture 3 -- Passage à \texttt{mongo\_secure} avec publication locale et refus d'accès anonyme.}{Le conteneur insecure est supprimé puis remplacé par \texttt{mongo\_secure}, lié à \texttt{127.0.0.1}. Une tentative de lecture de \texttt{security\_logs} échoue avec \texttt{Command find requires authentication}.}
+
+\evidencepage{fig04.png}{Capture 4 -- Validation du compte administrateur sur l'instance sécurisée.}{Après authentification en tant qu'administrateur, \texttt{listDatabases} fonctionne. Cela confirme que la sécurité distingue correctement un client non authentifié d'un client autorisé.}
+
+\evidencepage{fig05.png}{Capture 5 -- Création manuelle du compte root sur \texttt{mongo\_manual}.}{Cette capture documente un scénario plus avancé : démarrage manuel avec \texttt{mongod --auth --bind\_ip\_all}, création du compte root dans la base \texttt{admin}, puis reconnexion réussie.}
+
+\evidencepage{fig06.png}{Capture 6 -- Authentification réussie de \texttt{soc\_app} avec \texttt{authenticationDatabase = soc\_lite}.}{Le compte applicatif se connecte avec la bonne base d'authentification et peut interroger \texttt{security\_logs}. La capture sert de validation positive du mécanisme d'authentification par base.}
+
+\evidencepage{fig07.png}{Capture 7 -- Échec d'authentification de \texttt{soc\_app} avec la mauvaise authDB.}{Ici, la même identité applicative est utilisée contre \texttt{admin}. MongoDB retourne \texttt{Authentication failed}. Cette capture est importante car elle prouve que le paramètre d'authDB n'est pas décoratif : il conditionne réellement l'accès.}
+
+\evidencepage{fig08.png}{Capture 8 -- Création du rôle personnalisé \texttt{incidentManager}.}{La commande \texttt{db.createRole()} définit un rôle limité à la collection \texttt{incidents} avec les actions \texttt{find}, \texttt{insert}, \texttt{update} et \texttt{remove}. C'est la base du profil manager.}
+
+\evidencepage{fig09.png}{Capture 9 -- Insertion du jeu de données de test dans \texttt{security\_logs}, \texttt{incidents} et \texttt{users}.}{La capture montre l'insertion de plusieurs journaux SSH, de deux incidents et de deux utilisateurs. Elle fournit le socle de données nécessaire aux vérifications RBAC ultérieures.}
+
+\evidencepage{fig10.png}{Capture 10 -- Création de \texttt{soc\_analyst\_ro} et \texttt{soc\_manager}.}{Le compte analyste reçoit le rôle built-in \texttt{read} sur \texttt{soc\_lite}, tandis que le compte manager reçoit le rôle personnalisé \texttt{incidentManager}.}
+
+\evidencepage{fig11.png}{Capture 12 -- Vérification des utilisateurs et rôles présents dans \texttt{soc\_lite}.}{La sortie de \texttt{db.getUsers()} confirme la présence de \texttt{soc\_analyst\_ro}, \texttt{soc\_app} et \texttt{soc\_manager}. La sortie de \texttt{db.getRoles()} confirme la présence du rôle personnalisé \texttt{incidentManager}.}
+
+\evidencepage{fig12.png}{Capture 13 -- Visualisation des rôles built-in et du rôle personnalisé.}{La commande \texttt{db.getRoles(\{showBuiltinRoles:true\})} rappelle que \texttt{read} et \texttt{readWrite} sont des rôles globaux à l'échelle de la base. Cette capture aide à expliquer les débordements de privilèges observés ensuite.}
+
+\evidencepage{fig13.png}{Capture 14 -- Tests du compte \texttt{soc\_analyst\_ro}.}{Les lectures de logs et d'incidents sont autorisées, l'insertion et la suppression sont refusées, mais \texttt{db.users.find()} retourne les documents. La capture est centrale car elle matérialise l'écart entre la politique souhaitée et le comportement réel du rôle built-in \texttt{read}.}
+
+\evidencepage{fig14.png}{Capture 15 -- Tests du compte \texttt{soc\_manager}.}{Le compte manager lit les incidents, modifie le statut d'un incident avec succès, mais ne peut ni lire \texttt{security\_logs}, ni lire \texttt{users}, ni administrer l'instance. C'est la mise en œuvre la plus propre du moindre privilège dans l'ensemble des preuves.}
+
+\evidencepage{fig15.png}{Capture 16 -- Tests du compte \texttt{soc\_app}.}{Le compte applicatif insère un événement \texttt{firewall\_drop} et lit les incidents ouverts. En revanche, il peut aussi lire \texttt{users}, ce qui révèle la limite du rôle built-in \texttt{readWrite}. L'administration de l'instance reste heureusement refusée.}
+
+
+\end{document}

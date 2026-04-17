@@ -1,0 +1,1056 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Séance 2 — Modélisation NoSQL, Requêtes & Index — Module NoSQL Security</title>
+<style>
+:root {
+  --primary: #1a237e;
+  --secondary: #0d47a1;
+  --accent: #ff6f00;
+  --danger: #c62828;
+  --success: #2e7d32;
+  --info: #01579b;
+  --bg: #fafafa;
+  --card: #ffffff;
+  --text: #212121;
+  --border: #e0e0e0;
+  --code-bg: #263238;
+  --code-text: #eeffff;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: var(--bg); color: var(--text);
+  line-height: 1.72; font-size: 16px;
+  max-width: 1100px; margin: 0 auto; padding: 20px 30px 60px;
+}
+h1 { font-size: 2em; color: var(--primary); border-bottom: 4px solid var(--accent); padding-bottom: 10px; margin: 30px 0 15px; }
+h2 { font-size: 1.55em; color: var(--secondary); border-left: 5px solid var(--accent); padding-left: 14px; margin: 35px 0 12px; }
+h3 { font-size: 1.25em; color: var(--primary); margin: 22px 0 8px; }
+h4 { font-size: 1.08em; color: var(--info); margin: 16px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--secondary); }
+code { background: #eceff1; padding: 2px 6px; border-radius: 3px; font-family: 'Cascadia Code','Fira Code','Consolas',monospace; font-size: .92em; }
+pre { background: var(--code-bg); color: var(--code-text); padding: 16px 20px; border-radius: 8px; overflow-x: auto; font-size: .9em; line-height: 1.55; margin: 10px 0 14px; font-family: 'Cascadia Code','Fira Code','Consolas',monospace; }
+pre .c { color: #546e7a; font-style: italic; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0 18px; }
+th, td { border: 1px solid var(--border); padding: 9px 13px; text-align: left; font-size: .95em; }
+th { background: var(--primary); color: #fff; font-weight: 600; }
+tr:nth-child(even) { background: #f5f5f5; }
+.box { border-radius: 8px; padding: 16px 20px; margin: 16px 0; border-left: 5px solid; }
+.box-title { font-weight: 700; font-size: 1.02em; margin-bottom: 6px; }
+.box-retenir { background: #e8f5e9; border-color: var(--success); }
+.box-retenir .box-title { color: var(--success); }
+.box-erreur { background: #fce4ec; border-color: var(--danger); }
+.box-erreur .box-title { color: var(--danger); }
+.box-securite { background: #fff3e0; border-color: var(--accent); }
+.box-securite .box-title { color: #e65100; }
+.box-checkpoint { background: #e3f2fd; border-color: var(--info); }
+.box-checkpoint .box-title { color: var(--info); }
+.box-astuce { background: #f3e5f5; border-color: #7b1fa2; }
+.box-astuce .box-title { color: #7b1fa2; }
+.box-tp { background: #e0f2f1; border-color: #00695c; }
+.box-tp .box-title { color: #00695c; }
+.page-garde { text-align: center; padding: 40px 20px; border: 3px solid var(--primary); border-radius: 12px; margin-bottom: 30px; background: linear-gradient(135deg,#e8eaf6 0%,#fff 100%); }
+.page-garde h1 { border: none; font-size: 2.2em; }
+.page-garde .subtitle { font-size: 1.2em; color: var(--accent); font-weight: 600; margin: 8px 0; }
+.page-garde .meta { color: #555; margin: 4px 0; }
+.toc { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px 28px; margin: 20px 0; }
+.toc ul { list-style: none; } .toc > ul > li { margin: 5px 0; } .toc ul ul { padding-left: 22px; }
+.toc a { text-decoration: none; color: var(--secondary); } .toc a:hover { text-decoration: underline; color: var(--accent); }
+.correction { background: #f1f8e9; border: 1px dashed var(--success); padding: 10px 14px; border-radius: 6px; margin: 8px 0; }
+.correction strong { color: var(--success); }
+.depannage { background: #fff8e1; border: 1px solid #ffcc02; padding: 10px 14px; border-radius: 6px; margin: 8px 0; }
+.timeline td:first-child { white-space: nowrap; font-weight: 600; width: 110px; }
+figure { margin: 18px 0; text-align: center; }
+figure svg { max-width: 100%; height: auto; }
+figcaption { font-size: .92em; color: #555; margin-top: 6px; font-style: italic; }
+.devoir { background: #fce4ec; border: 2px solid var(--danger); border-radius: 8px; padding: 18px 22px; margin: 20px 0; }
+@media print { body { font-size: 11pt; padding: 0; } pre { font-size: 9pt; } .box,.toc,.page-garde { break-inside: avoid; } h2 { break-after: avoid; } }
+</style>
+</head>
+<body>
+
+<!-- ===== PAGE DE GARDE ===== -->
+<div class="page-garde" id="top">
+  <h1>Module NoSQL Security</h1>
+  <div class="subtitle">Séance 2 — Modélisation NoSQL, Requêtes Avancées &amp; Index</div>
+  <div class="subtitle" style="color:var(--primary);font-size:1em;">Fil conducteur : Plateforme SOC-lite</div>
+  <br>
+  <div class="meta"><strong>Public :</strong> 2<sup>eme</sup> année Cybersécurité — Débutants NoSQL</div>
+  <div class="meta"><strong>Prérequis :</strong> Séance 1 validée (Docker, MongoDB, mongosh, CRUD basique)</div>
+  <div class="meta"><strong>Outils :</strong> Docker / Docker Compose · MongoDB 7+ · mongosh · (optionnel) MongoDB Compass</div>
+  <div class="meta"><strong>Livrables :</strong> Modèle data SOC-lite complet + requêtes + index + checklist sécurité</div>
+</div>
+
+
+
+<!-- ===== 0. RAPPEL + OBJECTIFS ===== -->
+<h2 id="sec0">0. Rappel de la Séance 1 &amp; Objectifs de la Séance 2</h2>
+
+<h3>Ce que vous savez déjà</h3>
+<p>En Séance 1, vous avez découvert la différence fondamentale entre les bases relationnelles (SQL) et les bases orientées documents (NoSQL). Vous avez installé MongoDB via Docker, lancé le shell <code>mongosh</code>, et exécuté vos premières opérations CRUD : <code>insertOne</code>, <code>find</code>, <code>updateOne</code>, <code>deleteOne</code>. Vous avez également vu que MongoDB, par défaut, écoute sur le port 27017 et que, sans authentification activée, toute personne ayant accès au réseau peut se connecter — un premier aperçu du principe « secure by default ».</p>
+<p>Vous savez qu'un document MongoDB est un objet JSON (techniquement BSON) et que chaque document possède un identifiant unique <code>_id</code>. Vous avez manipulé une collection simple, mais vous n'avez pas encore réfléchi à <strong>comment structurer vos données</strong> quand il y a plusieurs entités reliées entre elles. C'est exactement ce que nous allons faire aujourd'hui.</p>
+
+<h3>Objectifs de la Séance 2</h3>
+<p>Cette séance est le cœur de la modélisation NoSQL. À la fin de ces 4 heures, vous serez capables de :</p>
+<p><strong>1)</strong> Choisir entre <em>embedding</em> (imbrication) et <em>referencing</em> (référence) et justifier votre choix. <strong>2)</strong> Appliquer 5 patterns de modélisation courants (One-to-Few, One-to-Many, Many-to-Many, Time-series, Dénormalisation contrôlée). <strong>3)</strong> Écrire des requêtes SOC avancées : filtres multi-champs, intervalles de temps, tri, pagination et projection minimale. <strong>4)</strong> Utiliser l'aggregation pipeline pour produire des statistiques utiles à un analyste SOC. <strong>5)</strong> Créer et évaluer des index simples et composés, et mesurer leur impact avec <code>explain()</code>. <strong>6)</strong> Identifier les erreurs de modélisation qui créent des risques de sécurité : fuites par duplication, sur-collecte de données, exposition de champs sensibles.</p>
+
+
+<!-- ===== BLOC 1 ===== -->
+<h2 id="bloc1">Bloc 1 — Modélisation NoSQL : Embed vs Reference (20 min)</h2>
+
+<h3>1.1 Le problème central de la modélisation document</h3>
+<p>En SQL, on normalise : chaque entité a sa table, et les relations passent par des clés étrangères avec des jointures. En NoSQL orienté document, il n'y a <strong>pas de jointures natives efficaces</strong>. Vous devez donc décider, pour chaque relation entre deux entités, si vous <em>imbriquez</em> (embed) les données dans un seul document, ou si vous les séparez dans deux collections liées par un identifiant (reference).</p>
+<p>Ce choix n'est pas anodin : il conditionne la performance des requêtes, la taille des documents, la cohérence des données lors des mises à jour, et — c'est crucial pour nous — la <strong>surface d'attaque</strong>. Un document qui contient trop d'informations imbriquées peut exposer des données sensibles lors d'une requête mal protégée. Inversement, des références éclatées sans contrôle d'accès peuvent permettre à un utilisateur de traverser les liens et accéder à des informations qu'il ne devrait pas voir.</p>
+<p>Pensez à une analogie simple : imaginez un dossier papier. <strong>Embed</strong>, c'est mettre toutes les pièces dans une seule chemise — pratique pour tout lire d'un coup, mais si quelqu'un ouvre la chemise, il voit tout. <strong>Reference</strong>, c'est ranger les pièces dans des classeurs différents avec un numéro de renvoi — il faut aller chercher chaque pièce séparément, mais on peut contrôler l'accès à chaque classeur indépendamment.</p>
+
+<h3>1.2 Quand utiliser Embed ?</h3>
+<p>L'imbrication est recommandée lorsque les données enfant sont <strong>toujours lues avec le parent</strong>, que la quantité de données imbriquées est <strong>bornée et prévisible</strong>, et que les données imbriquées sont rarement mises à jour de façon indépendante. Par exemple, un incident de sécurité possède des <em>commentaires</em> d'analystes. Ces commentaires n'ont de sens que dans le contexte de l'incident. Leur nombre est limité (rarement plus de 20–30). On va donc les imbriquer.</p>
+<p>En cybersécurité, un cas typique est l'enregistrement d'un utilisateur avec ses <strong>rôles applicatifs</strong> : <code>{ username: "alice", roles: ["analyst", "viewer"] }</code>. Les rôles sont peu nombreux, toujours lus avec l'utilisateur, et changent rarement. L'embed est le bon choix.</p>
+
+<h3>1.3 Quand utiliser Reference ?</h3>
+<p>La référence est préférable lorsque les données enfant sont <strong>volumineuses ou illimitées</strong>, qu'elles sont <strong>accédées indépendamment</strong>, ou qu'elles doivent être <strong>partagées entre plusieurs parents</strong>. Les logs de sécurité en sont l'exemple parfait : un incident peut être lié à des centaines de milliers de lignes de logs. Imbriquer tout cela dans le document incident ferait exploser sa taille (limite MongoDB : 16 Mo par document) et rendrait chaque lecture de l'incident extrêmement lourde.</p>
+<p>On va donc stocker les logs dans une collection séparée <code>security_logs</code> et y placer un champ <code>incident_id</code> qui pointe vers la collection <code>incidents</code>. Ainsi, on peut requêter les logs indépendamment (par IP source, par type d'événement, par plage horaire) sans charger l'incident complet.</p>
+
+<!-- FIGURE 1 -->
+<figure id="fig1">
+<svg viewBox="0 0 800 340" xmlns="http://www.w3.org/2000/svg" style="max-width:750px;">
+  <rect x="20" y="10" width="350" height="310" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+  <text x="195" y="38" text-anchor="middle" font-size="16" font-weight="bold" fill="#2e7d32">EMBED (Imbrication)</text>
+  <rect x="50" y="55" width="290" height="200" rx="8" fill="#fff" stroke="#388e3c" stroke-width="1.5"/>
+  <text x="70" y="80" font-size="13" font-family="monospace" fill="#333">{ _id: "INC-001",</text>
+  <text x="70" y="100" font-size="13" font-family="monospace" fill="#333">  title: "Brute force SSH",</text>
+  <text x="70" y="120" font-size="13" font-family="monospace" fill="#333">  severity: "high",</text>
+  <text x="70" y="140" font-size="13" font-family="monospace" fill="#555">  comments: [</text>
+  <rect x="85" y="148" width="235" height="50" rx="5" fill="#c8e6c9" stroke="#66bb6a" stroke-width="1"/>
+  <text x="95" y="168" font-size="12" font-family="monospace" fill="#333">{ author: "alice",</text>
+  <text x="95" y="185" font-size="12" font-family="monospace" fill="#333">  text: "Confirmed." }</text>
+  <text x="70" y="218" font-size="13" font-family="monospace" fill="#555">  ] }</text>
+  <text x="195" y="278" text-anchor="middle" font-size="12" fill="#2e7d32">✓ 1 seule lecture</text>
+  <text x="195" y="296" text-anchor="middle" font-size="12" fill="#c62828">✗ Données couplées</text>
+
+  <rect x="420" y="10" width="370" height="310" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+  <text x="605" y="38" text-anchor="middle" font-size="16" font-weight="bold" fill="#1565c0">REFERENCE (Lien)</text>
+  <rect x="440" y="55" width="155" height="95" rx="8" fill="#fff" stroke="#1976d2" stroke-width="1.5"/>
+  <text x="450" y="78" font-size="12" font-family="monospace" fill="#333">incidents</text>
+  <text x="450" y="98" font-size="11" font-family="monospace" fill="#555">{ _id: "INC-001",</text>
+  <text x="450" y="114" font-size="11" font-family="monospace" fill="#555">  title: "Brute.." }</text>
+  <text x="450" y="135" font-size="11" font-family="monospace" fill="#555"></text>
+  <rect x="625" y="55" width="155" height="110" rx="8" fill="#fff" stroke="#1976d2" stroke-width="1.5"/>
+  <text x="635" y="78" font-size="12" font-family="monospace" fill="#333">security_logs</text>
+  <text x="635" y="98" font-size="11" font-family="monospace" fill="#555">{ _id: "L-4421",</text>
+  <text x="635" y="114" font-size="11" font-family="monospace" fill="#555">  incident_id:</text>
+  <text x="635" y="130" font-size="11" font-family="monospace" fill="#0d47a1">    "INC-001",</text>
+  <text x="635" y="146" font-size="11" font-family="monospace" fill="#555">  src_ip: "..." }</text>
+  <defs><marker id="arR" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#ff6f00"/></marker></defs>
+  <line x1="596" y1="102" x2="624" y2="102" stroke="#ff6f00" stroke-width="2.5" marker-end="url(#arR)"/>
+  <text x="605" y="200" text-anchor="middle" font-size="12" fill="#1565c0">✓ Données indépendantes</text>
+  <text x="605" y="218" text-anchor="middle" font-size="12" fill="#1565c0">✓ Accès contrôlable séparément</text>
+  <text x="605" y="236" text-anchor="middle" font-size="12" fill="#c62828">✗ 2 requêtes nécessaires</text>
+  <text x="515" y="270" text-anchor="middle" font-size="12" fill="#333" font-weight="bold">Critères de choix :</text>
+  <text x="515" y="288" text-anchor="middle" font-size="11" fill="#555">Données bornées + lues ensemble → Embed</text>
+  <text x="515" y="304" text-anchor="middle" font-size="11" fill="#555">Données illimitées / indépendantes → Ref</text>
+  <text x="515" y="320" text-anchor="middle" font-size="11" fill="#c62828">Données sensibles à isoler → Ref</text>
+</svg>
+<figcaption><strong>Figure 1</strong> — Comparaison Embed vs Reference. L'embed regroupe les données dans un seul document, réduisant le nombre de requêtes mais couplant les données. La référence sépare les entités, permettant un contrôle d'accès plus fin et une meilleure scalabilité. En contexte SOC, les commentaires (bornés) sont embedded dans l'incident, tandis que les logs (millions potentiels) sont référencés. Règle sécurité : si les données sont sensibles et doivent pouvoir être isolées, préférez la référence.</figcaption>
+</figure>
+
+<div class="box box-retenir"><div class="box-title">✅ À retenir</div>
+<p><strong>Embed</strong> quand : données bornées, toujours lues ensemble, rarement mises à jour seules. <strong>Reference</strong> quand : données volumineuses, accédées indépendamment, ou sensibles à isoler. En sécurité, la référence offre une meilleure <strong>séparation logique</strong> : on peut restreindre l'accès à une collection sans toucher à l'autre.</p></div>
+
+<div class="box box-erreur"><div class="box-title">⚠️ Erreur fréquente</div>
+<p><strong>Imbriquer les logs dans l'incident.</strong> Un étudiant débutant pourrait écrire <code>{ incident: "...", logs: [ ... 50000 entrées ] }</code>. Le document explose la limite de 16 Mo, les requêtes deviennent lentes, et surtout : <strong>quiconque lit l'incident voit tous les logs bruts</strong>, y compris des données réseau potentiellement sensibles (IP internes, payloads).</p>
+<p><strong>Pourquoi c'est dangereux :</strong> Un analyste junior qui n'a accès qu'au suivi d'incident se retrouve exposé à des données réseau brutes qu'il ne devrait pas voir — violation du principe de moindre privilège au niveau données.</p></div>
+
+<h4>Micro-question</h4>
+<p><em>Un analyste SOC crée un profil utilisateur avec ses 3 certifications (CEH, OSCP, GCIH). Embed ou Reference ?</em></p>
+<div class="correction"><strong>Correction :</strong> Embed. Les certifications sont peu nombreuses (bornées), toujours affichées avec le profil, et rarement modifiées. On écrirait : <code>{ username: "bob", certifications: ["CEH", "OSCP", "GCIH"] }</code>.</div>
+
+<!-- ===== TP 1 ===== -->
+<h2 id="tp1">TP 1 — Dessiner &amp; insérer le modèle SOC-lite (25 min)</h2>
+
+<div class="box box-tp"><div class="box-title">🔬 TP 1</div>
+<p><strong>Objectif :</strong> Concevoir le modèle de données SOC-lite (3 collections), le formaliser en JSON, et insérer les premiers documents.<br>
+<strong>Durée :</strong> 25 min &nbsp;|&nbsp; <strong>Prérequis :</strong> Docker + MongoDB lancés, mongosh connecté.</p></div>
+
+<h4>Étape 1 — Lancer l'environnement</h4>
+<pre><span class="c"># Si pas déjà fait :</span>
+docker run -d --name mongo-soc -p 27017:27017 mongo:7
+docker exec -it mongo-soc mongosh</pre>
+<pre><span class="c">// Dans mongosh :</span>
+use soc_lite</pre>
+
+<h4>Étape 2 — Collection <code>users</code> (Embed : rôles + contact)</h4>
+<pre>db.users.insertMany([
+  {
+    username: "alice_analyst",
+    full_name: "Alice Dupont",
+    email: "alice@soc.local",
+    roles: ["analyst", "viewer"],
+    team: "Blue Team",
+    created_at: new Date("2025-01-15"),
+    last_login: new Date("2025-03-01T08:30:00Z"),
+    is_active: true
+  },
+  {
+    username: "bob_senior",
+    full_name: "Bob Martin",
+    email: "bob@soc.local",
+    roles: ["senior_analyst", "incident_manager"],
+    team: "Blue Team",
+    created_at: new Date("2024-06-10"),
+    last_login: new Date("2025-03-03T14:12:00Z"),
+    is_active: true
+  },
+  {
+    username: "charlie_admin",
+    full_name: "Charlie Leroy",
+    email: "charlie@soc.local",
+    roles: ["admin"],
+    team: "SOC Management",
+    created_at: new Date("2024-01-05"),
+    last_login: new Date("2025-02-28T18:00:00Z"),
+    is_active: true
+  },
+  {
+    username: "diana_junior",
+    full_name: "Diana Nour",
+    email: "diana@soc.local",
+    roles: ["viewer"],
+    team: "Blue Team",
+    created_at: new Date("2025-02-01"),
+    last_login: new Date("2025-03-03T09:00:00Z"),
+    is_active: true
+  }
+])</pre>
+
+<h4>Étape 3 — Collection <code>security_logs</code> (Time-series / append-only)</h4>
+<pre>db.security_logs.insertMany([
+  {
+    timestamp: new Date("2025-03-03T10:05:22Z"),
+    event_type: "login_failed",
+    src_ip: "192.168.1.105", dst_ip: "10.0.0.2",
+    src_port: 44821, dst_port: 22,
+    protocol: "SSH", user_attempted: "root",
+    device_id: "srv-web-01", severity: "medium",
+    raw_log: "Failed password for root from 192.168.1.105 port 44821 ssh2"
+  },
+  {
+    timestamp: new Date("2025-03-03T10:05:23Z"),
+    event_type: "login_failed",
+    src_ip: "192.168.1.105", dst_ip: "10.0.0.2",
+    src_port: 44822, dst_port: 22,
+    protocol: "SSH", user_attempted: "root",
+    device_id: "srv-web-01", severity: "medium",
+    raw_log: "Failed password for root from 192.168.1.105 port 44822 ssh2"
+  },
+  {
+    timestamp: new Date("2025-03-03T10:05:24Z"),
+    event_type: "login_failed",
+    src_ip: "192.168.1.105", dst_ip: "10.0.0.2",
+    src_port: 44823, dst_port: 22,
+    protocol: "SSH", user_attempted: "admin",
+    device_id: "srv-web-01", severity: "medium",
+    raw_log: "Failed password for admin from 192.168.1.105 port 44823 ssh2"
+  },
+  {
+    timestamp: new Date("2025-03-03T10:12:00Z"),
+    event_type: "login_success",
+    src_ip: "10.0.1.50", dst_ip: "10.0.0.5",
+    src_port: 52100, dst_port: 443,
+    protocol: "HTTPS", user_attempted: "alice",
+    device_id: "siem-console", severity: "info",
+    raw_log: "Successful login for alice from 10.0.1.50"
+  },
+  {
+    timestamp: new Date("2025-03-03T11:30:45Z"),
+    event_type: "port_scan",
+    src_ip: "172.16.0.88", dst_ip: "10.0.0.0/24",
+    src_port: null, dst_port: null,
+    protocol: "TCP", user_attempted: null,
+    device_id: "ids-sensor-02", severity: "high",
+    raw_log: "Nmap SYN scan detected from 172.16.0.88 targeting 10.0.0.0/24"
+  },
+  {
+    timestamp: new Date("2025-03-03T14:22:10Z"),
+    event_type: "malware_detected",
+    src_ip: "192.168.2.30", dst_ip: "10.0.0.10",
+    src_port: 80, dst_port: 8080,
+    protocol: "HTTP", user_attempted: null,
+    device_id: "endpoint-pc-042", severity: "critical",
+    raw_log: "Trojan.GenericKD.46543210 detected in /tmp/update.exe"
+  },
+  {
+    timestamp: new Date("2025-03-03T15:00:00Z"),
+    event_type: "login_failed",
+    src_ip: "10.0.1.200", dst_ip: "10.0.0.5",
+    src_port: 61234, dst_port: 443,
+    protocol: "HTTPS", user_attempted: "charlie",
+    device_id: "siem-console", severity: "low",
+    raw_log: "Failed login for charlie - wrong password"
+  },
+  {
+    timestamp: new Date("2025-03-03T16:45:00Z"),
+    event_type: "data_exfiltration_suspect",
+    src_ip: "10.0.0.10", dst_ip: "203.0.113.50",
+    src_port: 443, dst_port: 443,
+    protocol: "HTTPS", user_attempted: null,
+    device_id: "firewall-main", severity: "critical",
+    raw_log: "Unusual outbound transfer 2.3GB to 203.0.113.50"
+  }
+])</pre>
+
+<h4>Étape 4 — Collection <code>incidents</code> (Embed comments + Reference logs)</h4>
+<pre><span class="c">// Récupérer les IDs des logs SSH pour les référencer</span>
+let logIds = db.security_logs.find({ src_ip: "192.168.1.105" }).map(d =&gt; d._id)
+
+db.incidents.insertMany([
+  {
+    incident_id: "INC-2025-001",
+    title: "Brute force SSH sur srv-web-01",
+    description: "Multiples tentatives SSH échouées depuis 192.168.1.105 ciblant root et admin.",
+    severity: "high", status: "investigating",
+    created_at: new Date("2025-03-03T10:30:00Z"),
+    updated_at: new Date("2025-03-03T11:00:00Z"),
+    assigned_to: "alice_analyst",
+    tags: ["brute-force", "ssh", "external"],
+    related_log_ids: logIds,
+    comments: [
+      { author: "alice_analyst",
+        text: "3 tentatives en 2s depuis la même IP. Pattern brute-force confirmé.",
+        timestamp: new Date("2025-03-03T10:35:00Z") },
+      { author: "bob_senior",
+        text: "IP bloquée au firewall. Surveiller si rebond depuis un autre vecteur.",
+        timestamp: new Date("2025-03-03T10:50:00Z") }
+    ],
+    mitre_tactics: ["TA0006"],
+    mitre_techniques: ["T1110.001"]
+  },
+  {
+    incident_id: "INC-2025-002",
+    title: "Malware détecté sur endpoint-pc-042",
+    description: "Trojan détecté dans /tmp/update.exe. Potentielle exfiltration en cours.",
+    severity: "critical", status: "active",
+    created_at: new Date("2025-03-03T14:30:00Z"),
+    updated_at: new Date("2025-03-03T16:50:00Z"),
+    assigned_to: "bob_senior",
+    tags: ["malware", "exfiltration", "endpoint"],
+    related_log_ids: db.security_logs.find({
+      event_type: { $in: ["malware_detected","data_exfiltration_suspect"] }
+    }).map(d =&gt; d._id),
+    comments: [
+      { author: "bob_senior",
+        text: "Isolement réseau du poste effectué. Analyse forensique en cours.",
+        timestamp: new Date("2025-03-03T14:45:00Z") }
+    ],
+    mitre_tactics: ["TA0010","TA0011"],
+    mitre_techniques: ["T1041","T1071.001"]
+  }
+])</pre>
+
+<h4>Étape 5 — Vérification</h4>
+<pre>db.users.countDocuments()          <span class="c">// → 4</span>
+db.security_logs.countDocuments()  <span class="c">// → 8</span>
+db.incidents.countDocuments()      <span class="c">// → 2</span>
+db.incidents.findOne({ incident_id: "INC-2025-001" })</pre>
+<p><strong>Résultat attendu :</strong> L'incident INC-2025-001 avec ses 2 commentaires embedded et un tableau <code>related_log_ids</code> contenant les ObjectId des 3 logs SSH.</p>
+
+<h4>Auto-check TP 1</h4>
+<p><em>Q1 : Pourquoi les rôles sont-ils embedded dans <code>users</code> ?</em></p>
+<div class="correction"><strong>R1 :</strong> Peu nombreux (2–3), toujours lus avec l'utilisateur, rarement modifiés. L'embed évite une requête supplémentaire.</div>
+<p><em>Q2 : Pourquoi les logs sont-ils référencés et non imbriqués dans l'incident ?</em></p>
+<div class="correction"><strong>R2 :</strong> Un incident peut impliquer des milliers de logs. Les imbriquer dépasserait la limite de 16 Mo et empêcherait de requêter les logs indépendamment.</div>
+<p><em>Q3 : Combien de collections ? Nommez-les.</em></p>
+<div class="correction"><strong>R3 :</strong> 3 : <code>users</code>, <code>security_logs</code>, <code>incidents</code>.</div>
+
+<div class="depannage">
+<strong>Dépannage :</strong><br>
+- <code>mongosh: not found</code> → Vérifiez <code>docker ps</code>. Relancez <code>docker exec -it mongo-soc mongosh</code>.<br>
+- <code>E11000 duplicate key</code> → Insert relancé. Faites <code>db.collection.drop()</code> puis ré-insérez.<br>
+- <code>logIds</code> vide → Insérez <code>security_logs</code> AVANT <code>incidents</code>.</div>
+
+<!-- ===== CHECKPOINT 1 ===== -->
+<h2 id="ck1">Checkpoint 1 — Quiz (10 min, ≈ 60 min)</h2>
+<div class="box box-checkpoint"><div class="box-title">🎯 Checkpoint 1</div>
+<p><strong>Q1 :</strong> Quel est le risque principal d'un document dépassant 16 Mo ?</p>
+<p><strong>Q2 :</strong> 150 000 logs liés à un incident : Embed ou Reference ? Pourquoi ?</p>
+<p><strong>Q3 :</strong> Citez un exemple d'embed et un de reference dans notre modèle.</p></div>
+<div class="correction">
+<strong>C1 :</strong> MongoDB refuse l'insertion/mise à jour. Le document est rejeté.<br>
+<strong>C2 :</strong> Reference. 150 000 logs dépasseraient la taille, ralentiraient les lectures, et exposeraient les logs bruts à quiconque accède à l'incident.<br>
+<strong>C3 :</strong> Embed : commentaires dans <code>incidents</code>, rôles dans <code>users</code>. Reference : <code>related_log_ids</code> vers <code>security_logs</code>.</div>
+
+<!-- ===== BLOC 2 ===== -->
+<h2 id="bloc2">Bloc 2 — Patterns de relations (15 min)</h2>
+
+<h3>2.1 One-to-Few (Embed)</h3>
+<p>Ce pattern s'applique quand un parent possède un petit nombre d'enfants (< 20–30). Les enfants n'ont pas d'existence autonome — ils sont toujours consultés via le parent. Les <strong>commentaires</strong> d'un incident sont l'exemple parfait : on ne demande jamais « affiche-moi le commentaire n°4 tous incidents confondus », on demande toujours les commentaires <em>d'un incident donné</em>.</p>
+
+<h3>2.2 One-to-Many (Reference)</h3>
+<p>Quand le côté « many » est volumineux ou que les enfants ont une vie propre, on référence. Les <strong>logs</strong> liés à un incident suivent ce pattern. Chaque log est autonome dans <code>security_logs</code>. L'incident conserve un tableau <code>related_log_ids</code> (si le nombre de références reste raisonnable). Si le nombre est très élevé, on inverse : c'est le log qui porte <code>incident_id</code>.</p>
+
+<h3>2.3 Many-to-Many</h3>
+<p>En SQL, on crée une table de liaison. En MongoDB, on utilise des <strong>tableaux de références des deux côtés</strong>. Un analyste peut être assigné à plusieurs incidents, et un incident peut avoir plusieurs analystes. On stocke <code>assigned_analysts: ["alice_analyst", "bob_senior"]</code> dans l'incident. Attention : cette duplication nécessite une mise à jour des deux côtés pour rester cohérente.</p>
+
+<h3>2.4 Time-series / Append-only</h3>
+<p>Les logs de sécurité sont <strong>append-only</strong> : on ne modifie jamais un log, on en ajoute. On structure les documents avec un <code>timestamp</code> comme champ principal et on crée des index temporels. MongoDB propose des <em>time series collections</em> optimisées, mais pour ce cours on utilise des collections classiques avec index.</p>
+
+<h3>2.5 Dénormalisation contrôlée</h3>
+<p>On duplique volontairement une donnée pour éviter une requête supplémentaire. Par exemple, stocker <code>assigned_analyst_name: "Alice Dupont"</code> dans l'incident en plus du username. Cela accélère la lecture mais crée un risque : si Alice change de nom, tous les documents avec l'ancien nom doivent être mis à jour.</p>
+
+<div class="box box-securite"><div class="box-title">🔒 Sécurité — La duplication multiplie les surfaces</div>
+<p>Si le nom complet d'un analyste est dupliqué dans 50 000 logs, une fuite sur <code>security_logs</code> expose aussi des données personnelles des analystes. Règle : ne dupliquer que des données <strong>non sensibles</strong> et <strong>rarement modifiées</strong> (un username est acceptable, un numéro de téléphone ne l'est pas).</p></div>
+
+<!-- FIGURE 2 -->
+<figure id="fig2">
+<svg viewBox="0 0 800 370" xmlns="http://www.w3.org/2000/svg" style="max-width:750px;">
+  <rect x="30" y="20" width="210" height="165" rx="10" fill="#e8eaf6" stroke="#3949ab" stroke-width="2"/>
+  <text x="135" y="45" text-anchor="middle" font-size="15" font-weight="bold" fill="#283593">users</text>
+  <text x="45" y="68" font-size="11" font-family="monospace" fill="#333">username, full_name</text>
+  <text x="45" y="85" font-size="11" font-family="monospace" fill="#333">email</text>
+  <text x="45" y="102" font-size="11" font-family="monospace" fill="#2e7d32">roles: [...]  ← embed</text>
+  <text x="45" y="119" font-size="11" font-family="monospace" fill="#333">team, is_active</text>
+  <text x="45" y="136" font-size="11" font-family="monospace" fill="#333">created_at, last_login</text>
+  <text x="135" y="176" text-anchor="middle" font-size="10" fill="#666">One-to-Few (roles)</text>
+
+  <rect x="290" y="20" width="230" height="210" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+  <text x="405" y="45" text-anchor="middle" font-size="15" font-weight="bold" fill="#bf360c">incidents</text>
+  <text x="305" y="68" font-size="11" font-family="monospace" fill="#333">incident_id, title</text>
+  <text x="305" y="85" font-size="11" font-family="monospace" fill="#333">severity, status</text>
+  <text x="305" y="102" font-size="11" font-family="monospace" fill="#1565c0">assigned_to → users</text>
+  <text x="305" y="119" font-size="11" font-family="monospace" fill="#333">tags: [...]</text>
+  <text x="305" y="136" font-size="11" font-family="monospace" fill="#2e7d32">comments: [...]  ← embed</text>
+  <text x="305" y="153" font-size="11" font-family="monospace" fill="#1565c0">related_log_ids → logs</text>
+  <text x="305" y="170" font-size="11" font-family="monospace" fill="#333">mitre_tactics/techniques</text>
+  <text x="405" y="222" text-anchor="middle" font-size="10" fill="#666">One-to-Few (comments) + One-to-Many (logs)</text>
+
+  <rect x="570" y="20" width="210" height="185" rx="10" fill="#fce4ec" stroke="#c62828" stroke-width="2"/>
+  <text x="675" y="45" text-anchor="middle" font-size="15" font-weight="bold" fill="#b71c1c">security_logs</text>
+  <text x="585" y="68" font-size="11" font-family="monospace" fill="#333">timestamp</text>
+  <text x="585" y="85" font-size="11" font-family="monospace" fill="#333">event_type, severity</text>
+  <text x="585" y="102" font-size="11" font-family="monospace" fill="#333">src_ip, dst_ip</text>
+  <text x="585" y="119" font-size="11" font-family="monospace" fill="#333">protocol, device_id</text>
+  <text x="585" y="136" font-size="11" font-family="monospace" fill="#333">user_attempted</text>
+  <text x="585" y="153" font-size="11" font-family="monospace" fill="#333">raw_log</text>
+  <text x="675" y="196" text-anchor="middle" font-size="10" fill="#666">Time-series / Append-only</text>
+
+  <defs><marker id="ar2" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#ff6f00"/></marker></defs>
+  <line x1="240" y1="90" x2="289" y2="100" stroke="#1565c0" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#ar2)"/>
+  <text x="258" y="83" font-size="9" fill="#1565c0">assigned_to</text>
+  <line x1="520" y1="150" x2="569" y2="100" stroke="#ff6f00" stroke-width="2" marker-end="url(#ar2)"/>
+  <text x="535" y="138" font-size="9" fill="#e65100">related_log_ids</text>
+
+  <rect x="30" y="275" width="750" height="85" rx="8" fill="#f5f5f5" stroke="#bdbdbd" stroke-width="1"/>
+  <text x="50" y="300" font-size="12" font-weight="bold" fill="#333">Légende :</text>
+  <line x1="50" y1="320" x2="80" y2="320" stroke="#2e7d32" stroke-width="3"/>
+  <text x="90" y="325" font-size="11" fill="#333">Embed (One-to-Few)</text>
+  <line x1="280" y1="320" x2="310" y2="320" stroke="#1565c0" stroke-width="2" stroke-dasharray="6,3"/>
+  <text x="320" y="325" font-size="11" fill="#333">Reference logique (username)</text>
+  <line x1="530" y1="320" x2="560" y2="320" stroke="#ff6f00" stroke-width="2"/>
+  <text x="570" y="325" font-size="11" fill="#333">Reference ObjectId</text>
+  <text x="50" y="350" font-size="11" fill="#c62828">● security_logs = append-only (jamais modifiés après insertion)</text>
+</svg>
+<figcaption><strong>Figure 2</strong> — Modèle SOC-lite. <code>users</code> embed les rôles. <code>incidents</code> embed les commentaires et référence les logs par ObjectId. <code>security_logs</code> est append-only. Les flèches montrent les liens logiques. La séparation en 3 collections permet un contrôle d'accès granulaire par collection.</figcaption>
+</figure>
+
+<!-- ===== TP 2 ===== -->
+<h2 id="tp2">TP 2 — Incidents, Comments &amp; Logs reliés (30 min)</h2>
+
+<div class="box box-tp"><div class="box-title">🔬 TP 2</div>
+<p><strong>Objectif :</strong> Manipuler embed ($push) et reference : ajouter des commentaires, créer un incident lié à des logs existants, vérifier la cohérence.<br>
+<strong>Durée :</strong> 30 min</p></div>
+
+<h4>Étape 1 — Ajouter un commentaire (Embed : $push)</h4>
+<pre>db.incidents.updateOne(
+  { incident_id: "INC-2025-001" },
+  {
+    $push: { comments: {
+      author: "diana_junior",
+      text: "L'IP 192.168.1.105 appartient au sous-réseau visiteur. Aucun compte légitime.",
+      timestamp: new Date()
+    }},
+    $set: { updated_at: new Date() }
+  }
+)
+<span class="c">// Vérifier :</span>
+db.incidents.findOne(
+  { incident_id: "INC-2025-001" },
+  { comments: 1, incident_id: 1 }
+)
+<span class="c">// → 3 commentaires dans le tableau</span></pre>
+
+<h4>Étape 2 — Ajouter de nouveaux logs</h4>
+<pre>db.security_logs.insertMany([
+  {
+    timestamp: new Date("2025-03-03T17:00:00Z"),
+    event_type: "login_failed",
+    src_ip: "10.0.1.200", dst_ip: "10.0.0.5",
+    src_port: 61300, dst_port: 443,
+    protocol: "HTTPS", user_attempted: "charlie",
+    device_id: "siem-console", severity: "medium",
+    raw_log: "Failed login for charlie - account locked"
+  },
+  {
+    timestamp: new Date("2025-03-03T17:00:05Z"),
+    event_type: "login_failed",
+    src_ip: "10.0.1.200", dst_ip: "10.0.0.5",
+    src_port: 61305, dst_port: 443,
+    protocol: "HTTPS", user_attempted: "charlie",
+    device_id: "siem-console", severity: "medium",
+    raw_log: "Failed login for charlie - account locked"
+  },
+  {
+    timestamp: new Date("2025-03-03T17:01:00Z"),
+    event_type: "privilege_escalation",
+    src_ip: "10.0.1.200", dst_ip: "10.0.0.5",
+    src_port: 61310, dst_port: 443,
+    protocol: "HTTPS", user_attempted: "charlie",
+    device_id: "siem-console", severity: "critical",
+    raw_log: "Privilege escalation attempt detected for charlie"
+  }
+])</pre>
+
+<h4>Étape 3 — Créer un incident lié (Reference)</h4>
+<pre>let charlieLogIds = db.security_logs.find({
+  src_ip: "10.0.1.200",
+  timestamp: { $gte: new Date("2025-03-03T17:00:00Z") }
+}).map(d =&gt; d._id)
+
+db.incidents.insertOne({
+  incident_id: "INC-2025-003",
+  title: "Tentative d'escalade de privilèges - charlie",
+  description: "Échecs de connexion suivis d'une tentative d'escalade depuis 10.0.1.200.",
+  severity: "critical", status: "new",
+  created_at: new Date(), updated_at: new Date(),
+  assigned_to: "alice_analyst",
+  tags: ["privilege-escalation", "internal", "account-lockout"],
+  related_log_ids: charlieLogIds,
+  comments: [],
+  mitre_tactics: ["TA0004"],
+  mitre_techniques: ["T1078"]
+})</pre>
+
+<h4>Étape 4 — Vérifier la cohérence</h4>
+<pre>let inc3 = db.incidents.findOne({ incident_id: "INC-2025-003" })
+db.security_logs.find({ _id: { $in: inc3.related_log_ids } }).count()
+<span class="c">// → 3</span></pre>
+
+<h4>Étape 5 — Many-to-Many : plusieurs analystes</h4>
+<pre>db.incidents.updateOne(
+  { incident_id: "INC-2025-002" },
+  { $addToSet: { assigned_analysts: { $each: ["bob_senior","alice_analyst"] } } }
+)</pre>
+
+<h4>Auto-check TP 2</h4>
+<p><em>Q1 : Quel opérateur pour ajouter un élément à un tableau embedded ?</em></p>
+<div class="correction"><strong>R1 :</strong> <code>$push</code>. Pour éviter les doublons : <code>$addToSet</code>.</div>
+<p><em>Q2 : Si on supprime un log, que se passe-t-il dans l'incident ?</em></p>
+<div class="correction"><strong>R2 :</strong> Rien automatiquement. L'ObjectId reste dans <code>related_log_ids</code> → <strong>référence cassée</strong>. À gérer au niveau applicatif.</div>
+<p><em>Q3 : Pourquoi <code>$addToSet</code> plutôt que <code>$push</code> pour les analystes ?</em></p>
+<div class="correction"><strong>R3 :</strong> <code>$addToSet</code> empêche les doublons.</div>
+
+<!-- ===== BLOC 3 ===== -->
+<h2 id="bloc3">Bloc 3 — Requêtes SOC avancées (15 min)</h2>
+
+<h3>3.1 Filtrage multi-champs</h3>
+<p>Un analyste SOC ne cherche jamais « tous les logs ». Il filtre par type d'événement, IP source, sévérité, période. MongoDB combine les conditions en AND implicite. Pour un OU logique : opérateur <code>$or</code>.</p>
+<p>Exemple : logs critiques de type <code>malware_detected</code> venant de <code>192.168.2.30</code> → <code>{ severity: "critical", event_type: "malware_detected", src_ip: "192.168.2.30" }</code>. Les trois conditions doivent être vraies simultanément.</p>
+
+<h3>3.2 Intervalles de temps</h3>
+<p>On utilise <code>$gte</code> (≥) et <code>$lte</code> (≤) sur <code>timestamp</code>. Logs entre 10h et 12h : <code>{ timestamp: { $gte: new Date("2025-03-03T10:00:00Z"), $lte: new Date("2025-03-03T12:00:00Z") } }</code>.</p>
+
+<h3>3.3 Tri et pagination</h3>
+<p>Tri décroissant : <code>.sort({ timestamp: -1 })</code>. Pagination : <code>.skip(n).limit(m)</code>. Attention : <code>skip</code> est inefficace sur de gros datasets ; en production, on préfère la pagination par curseur.</p>
+
+<h3>3.4 Projection minimale — « Ne retourner que le nécessaire »</h3>
+<p>Par défaut, MongoDB retourne <strong>tous les champs</strong>. Si <code>users</code> contient <code>email</code> ou <code>phone</code>, une requête sans projection les expose. La projection spécifie les champs retournés : <code>{ username: 1, roles: 1, _id: 0 }</code>.</p>
+
+<!-- FIGURE 3 -->
+<figure id="fig3">
+<svg viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg" style="max-width:750px;">
+  <defs>
+    <marker id="a3" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#1565c0"/></marker>
+    <marker id="a3g" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#2e7d32"/></marker>
+  </defs>
+  <rect x="20" y="50" width="145" height="80" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+  <text x="92" y="85" text-anchor="middle" font-size="13" font-weight="bold" fill="#1565c0">Application</text>
+  <text x="92" y="105" text-anchor="middle" font-size="11" fill="#555">API / Dashboard</text>
+
+  <line x1="165" y1="78" x2="285" y2="78" stroke="#1565c0" stroke-width="2" marker-end="url(#a3)"/>
+  <text x="225" y="68" text-anchor="middle" font-size="10" fill="#1565c0">find({severity:"high"},</text>
+  <text x="225" y="56" text-anchor="middle" font-size="10" fill="#c62828">{src_ip:1, timestamp:1, _id:0})</text>
+
+  <rect x="287" y="30" width="200" height="120" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+  <text x="387" y="60" text-anchor="middle" font-size="13" font-weight="bold" fill="#bf360c">MongoDB</text>
+  <text x="387" y="80" text-anchor="middle" font-size="11" fill="#555">Filtre : severity=high</text>
+  <text x="387" y="98" text-anchor="middle" font-size="11" fill="#2e7d32">Projection : src_ip,</text>
+  <text x="387" y="113" text-anchor="middle" font-size="11" fill="#2e7d32">timestamp uniquement</text>
+
+  <line x1="487" y1="90" x2="575" y2="90" stroke="#2e7d32" stroke-width="2" marker-end="url(#a3g)"/>
+
+  <rect x="577" y="30" width="205" height="135" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+  <text x="680" y="55" text-anchor="middle" font-size="13" font-weight="bold" fill="#2e7d32">Réponse filtrée</text>
+  <text x="592" y="78" font-size="11" font-family="monospace" fill="#333">{ src_ip:"172.16.0.88",</text>
+  <text x="592" y="95" font-size="11" font-family="monospace" fill="#333">  timestamp:"..11:30" }</text>
+  <text x="592" y="120" font-size="11" fill="#c62828">✗ PAS de raw_log</text>
+  <text x="592" y="136" font-size="11" fill="#c62828">✗ PAS de email</text>
+  <text x="592" y="152" font-size="11" fill="#2e7d32">✓ Données minimales</text>
+
+  <text x="400" y="192" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">Principe : ne retourner que le strict nécessaire</text>
+</svg>
+<figcaption><strong>Figure 3</strong> — Flux requête avec projection minimale. L'application envoie filtre + projection. La réponse exclut <code>raw_log</code> et données personnelles. Ce pattern applique le principe de moindre privilège au niveau données : chaque composant ne reçoit que ce dont il a besoin.</figcaption>
+</figure>
+
+<div class="box box-erreur"><div class="box-title">⚠️ Erreur fréquente — Oublier la projection</div>
+<p><code>db.users.find({ team: "Blue Team" })</code> sans projection retourne <strong>tous les champs</strong>, y compris <code>email</code>. Si cette requête alimente un dashboard public, des données personnelles sont exposées.</p>
+<p><strong>Pourquoi c'est dangereux :</strong> Violation du principe de minimisation (RGPD, art. 5). Un attaquant compromettant l'API obtient plus que nécessaire.</p></div>
+
+<!-- ===== TP 3 ===== -->
+<h2 id="tp3">TP 3 — 10 requêtes guidées (35 min)</h2>
+
+<div class="box box-tp"><div class="box-title">🔬 TP 3</div>
+<p><strong>Objectif :</strong> Pratiquer filtrage, tri, pagination, projection sur les 3 collections. <strong>Durée :</strong> 35 min</p></div>
+
+<h4>Requêtes guidées</h4>
+
+<p><strong>R1 — Logs de sévérité "critical"</strong></p>
+<pre>db.security_logs.find({ severity: "critical" })
+<span class="c">// → malware_detected, data_exfiltration_suspect, privilege_escalation</span></pre>
+
+<p><strong>R2 — Logs entre 10h et 12h, triés</strong></p>
+<pre>db.security_logs.find({
+  timestamp: { $gte: new Date("2025-03-03T10:00:00Z"),
+               $lte: new Date("2025-03-03T12:00:00Z") }
+}).sort({ timestamp: 1 })</pre>
+
+<p><strong>R3 — Échecs login avec projection minimale</strong></p>
+<pre>db.security_logs.find(
+  { event_type: "login_failed" },
+  { src_ip: 1, user_attempted: 1, timestamp: 1, _id: 0 }
+)</pre>
+
+<p><strong>R4 — Les 3 derniers logs</strong></p>
+<pre>db.security_logs.find().sort({ timestamp: -1 }).limit(3)</pre>
+
+<p><strong>R5 — IP spécifique OU sévérité critical ($or)</strong></p>
+<pre>db.security_logs.find({
+  $or: [ { src_ip: "192.168.1.105" }, { severity: "critical" } ]
+})</pre>
+
+<p><strong>R6 — Incidents actifs avec commentaires</strong></p>
+<pre>db.incidents.find(
+  { status: { $in: ["active","investigating"] } },
+  { incident_id: 1, title: 1, "comments.author": 1, "comments.text": 1, _id: 0 }
+)</pre>
+
+<h4>Exercices autonomes</h4>
+
+<p><strong>E1 — Utilisateurs actifs du Blue Team (username + roles)</strong></p>
+<div class="correction"><pre>db.users.find(
+  { team: "Blue Team", is_active: true },
+  { username: 1, roles: 1, _id: 0 }
+)</pre></div>
+
+<p><strong>E2 — Logs du device "siem-console", récents d'abord, max 5</strong></p>
+<div class="correction"><pre>db.security_logs.find({ device_id: "siem-console" })
+  .sort({ timestamp: -1 }).limit(5)</pre></div>
+
+<p><strong>E3 — Compter les login_failed</strong></p>
+<div class="correction"><pre>db.security_logs.countDocuments({ event_type: "login_failed" })
+<span class="c">// → 5+</span></pre></div>
+
+<p><strong>E4 — Incidents d'alice_analyst (titre + sévérité)</strong></p>
+<div class="correction"><pre>db.incidents.find(
+  { assigned_to: "alice_analyst" },
+  { title: 1, severity: 1, _id: 0 }
+)</pre></div>
+
+<div class="box box-retenir"><div class="box-title">✅ À retenir</div>
+<p>Trois réflexes pour chaque requête SOC : <strong>1)</strong> Filtrer au maximum côté serveur. <strong>2)</strong> Projeter uniquement les champs nécessaires. <strong>3)</strong> Limiter les résultats (<code>.limit()</code>).</p></div>
+
+<!-- ===== CHECKPOINT 2 ===== -->
+<h2 id="ck2">Checkpoint 2 — Quiz (10 min, ≈ 120 min)</h2>
+<div class="box box-checkpoint"><div class="box-title">🎯 Checkpoint 2</div>
+<p><strong>Q1 :</strong> Écrivez la requête : logs SSH des 24 dernières heures, tri décroissant, projection src_ip + timestamp.</p>
+<p><strong>Q2 :</strong> Différence <code>$push</code> vs <code>$addToSet</code> ?</p>
+<p><strong>Q3 :</strong> Deux raisons sécurité d'utiliser la projection ?</p></div>
+<div class="correction">
+<strong>C1 :</strong><pre>db.security_logs.find(
+  { protocol: "SSH", timestamp: { $gte: new Date(Date.now() - 86400000) } },
+  { src_ip: 1, timestamp: 1, _id: 0 }
+).sort({ timestamp: -1 })</pre>
+<strong>C2 :</strong> <code>$push</code> ajoute même si doublon. <code>$addToSet</code> n'ajoute que si absent.<br>
+<strong>C3 :</strong> 1) Minimisation des données (pas d'emails/raw_logs exposés). 2) Réduction de la surface d'attaque en cas de compromission de l'API.</div>
+
+<!-- ===== BLOC 4 ===== -->
+<h2 id="bloc4">Bloc 4 — Aggregation Pipeline (15 min)</h2>
+
+<h3>4.1 Pourquoi l'aggregation ?</h3>
+<p><code>find()</code> filtre et projette, mais ne calcule pas de statistiques. Combien de logs par IP ? Quel pourcentage d'échecs ? Pour cela, MongoDB offre l'<strong>aggregation pipeline</strong> : des étapes (stages) qui transforment les données pas à pas, comme un pipeline Unix.</p>
+<p>Imaginez un entonnoir : chaque étape filtre, transforme ou regroupe. Les 4 stages essentiels pour un SOC : <code>$match</code> (filtrer), <code>$group</code> (regrouper + calculer), <code>$sort</code> (trier), <code>$limit</code>.</p>
+
+<h3>4.2 Les 4 stages</h3>
+<p><code>$match</code> doit être placé <strong>le plus tôt possible</strong> pour réduire le volume et exploiter les index. <code>$group</code> regroupe par clé avec accumulateurs (<code>$sum</code>, <code>$avg</code>, <code>$max</code>, <code>$addToSet</code>). <code>$sort</code> trie (1 = asc, -1 = desc). <code>$limit</code> tronque.</p>
+<p>Exemple : « Top 3 IPs avec le plus de login_failed » → <code>$match</code> login_failed → <code>$group</code> par src_ip + $sum → <code>$sort</code> count desc → <code>$limit</code> 3.</p>
+
+<div class="box box-securite"><div class="box-title">🔒 Sécurité — L'aggregation comme outil de détection</div>
+<p>Regrouper les échecs par IP identifie le brute-force. Calculer le volume sortant par destination détecte l'exfiltration. Ces pipelines sont le fondement des règles d'alerte SIEM.</p></div>
+
+<!-- ===== TP 4 ===== -->
+<h2 id="tp4">TP 4 — Statistiques SOC (20 min)</h2>
+
+<div class="box box-tp"><div class="box-title">🔬 TP 4</div>
+<p><strong>Objectif :</strong> Pipelines d'aggregation pour statistiques SOC. <strong>Durée :</strong> 20 min</p></div>
+
+<h4>A1 — Top IPs sources</h4>
+<pre>db.security_logs.aggregate([
+  { $group: { _id: "$src_ip", count: { $sum: 1 } } },
+  { $sort: { count: -1 } },
+  { $limit: 5 }
+])</pre>
+
+<h4>A2 — Échecs de login par utilisateur</h4>
+<pre>db.security_logs.aggregate([
+  { $match: { event_type: "login_failed" } },
+  { $group: {
+      _id: "$user_attempted",
+      failures: { $sum: 1 },
+      last_attempt: { $max: "$timestamp" }
+  }},
+  { $sort: { failures: -1 } }
+])</pre>
+
+<h4>A3 — Répartition des sévérités</h4>
+<pre>db.security_logs.aggregate([
+  { $group: { _id: "$severity", count: { $sum: 1 } } },
+  { $sort: { count: -1 } }
+])</pre>
+
+<h4>A4 — Alertes par device (high/critical)</h4>
+<pre>db.security_logs.aggregate([
+  { $match: { severity: { $in: ["high","critical"] } } },
+  { $group: {
+      _id: "$device_id",
+      alert_count: { $sum: 1 },
+      event_types: { $addToSet: "$event_type" }
+  }},
+  { $sort: { alert_count: -1 } }
+])</pre>
+
+<h4>Exercice — Événements par heure le 3 mars</h4>
+<div class="correction"><pre>db.security_logs.aggregate([
+  { $match: { timestamp: {
+      $gte: new Date("2025-03-03T00:00:00Z"),
+      $lt:  new Date("2025-03-04T00:00:00Z")
+  }}},
+  { $group: {
+      _id: { $dateToString: { format: "%H:00", date: "$timestamp" } },
+      count: { $sum: 1 }
+  }},
+  { $sort: { _id: 1 } }
+])</pre></div>
+
+<div class="box box-astuce"><div class="box-title">💡 Astuce</div>
+<p>Placez toujours <code>$match</code> en premier. MongoDB peut alors utiliser les index, ce qui accélère considérablement les pipelines sur de gros volumes.</p></div>
+
+<!-- ===== BLOC 5 ===== -->
+<h2 id="bloc5">Bloc 5 — Index : pourquoi, comment, mesurer (15 min)</h2>
+
+<h3>5.1 Sans index : collection scan</h3>
+<p>Sans index, MongoDB parcourt <strong>chaque document</strong> (COLLSCAN). Sur 8 docs, c'est instantané. Sur 10 millions de logs, une requête par IP peut prendre des secondes — inacceptable pour un SOC temps réel.</p>
+<p>Un index est un arbre B-tree trié par les valeurs d'un champ, avec des pointeurs vers les documents. La recherche passe de O(n) à O(log n).</p>
+
+<h3>5.2 Index simples vs composés</h3>
+<p><strong>Simple</strong> : un champ — <code>createIndex({ src_ip: 1 })</code>. <strong>Composé</strong> : plusieurs champs — <code>createIndex({ timestamp: 1, src_ip: 1 })</code>. Le composé accélère les requêtes sur <code>timestamp</code> seul ou <code>timestamp + src_ip</code>, mais PAS <code>src_ip</code> seul (prefix rule).</p>
+
+<h3>5.3 Coût et cardinalité</h3>
+<p>Chaque index consomme de la mémoire et ralentit les écritures. Indexer uniquement les champs fréquemment recherchés et à <strong>haute cardinalité</strong> (beaucoup de valeurs distinctes). <code>src_ip</code> = haute cardinalité (milliers d'IPs). <code>severity</code> = faible (4–5 valeurs) → index peu utile seul.</p>
+
+<!-- FIGURE 4 -->
+<figure id="fig4">
+<svg viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg" style="max-width:750px;">
+  <text x="400" y="22" text-anchor="middle" font-size="14" font-weight="bold" fill="#1a237e">Index B-tree simplifié sur timestamp</text>
+  <rect x="300" y="35" width="200" height="32" rx="6" fill="#e8eaf6" stroke="#3949ab" stroke-width="2"/>
+  <text x="400" y="56" text-anchor="middle" font-size="12" font-family="monospace" fill="#333">10:12 | 15:00</text>
+
+  <rect x="80" y="100" width="170" height="32" rx="6" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"/>
+  <text x="165" y="121" text-anchor="middle" font-size="11" font-family="monospace" fill="#333">10:05:22 | 10:05:24</text>
+  <rect x="315" y="100" width="170" height="32" rx="6" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"/>
+  <text x="400" y="121" text-anchor="middle" font-size="11" font-family="monospace" fill="#333">11:30 | 14:22</text>
+  <rect x="560" y="100" width="170" height="32" rx="6" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"/>
+  <text x="645" y="121" text-anchor="middle" font-size="11" font-family="monospace" fill="#333">16:45 | 17:00</text>
+
+  <line x1="340" y1="67" x2="200" y2="100" stroke="#7986cb" stroke-width="1.5"/>
+  <line x1="400" y1="67" x2="400" y2="100" stroke="#7986cb" stroke-width="1.5"/>
+  <line x1="460" y1="67" x2="610" y2="100" stroke="#7986cb" stroke-width="1.5"/>
+
+  <rect x="65" y="162" width="75" height="25" rx="4" fill="#fff3e0" stroke="#e65100" stroke-width="1"/>
+  <text x="102" y="179" text-anchor="middle" font-size="10" fill="#333">Doc SSH-1</text>
+  <rect x="165" y="162" width="75" height="25" rx="4" fill="#fff3e0" stroke="#e65100" stroke-width="1"/>
+  <text x="202" y="179" text-anchor="middle" font-size="10" fill="#333">Doc SSH-3</text>
+  <rect x="315" y="162" width="75" height="25" rx="4" fill="#fff3e0" stroke="#e65100" stroke-width="1"/>
+  <text x="352" y="179" text-anchor="middle" font-size="10" fill="#333">Doc Scan</text>
+  <rect x="415" y="162" width="75" height="25" rx="4" fill="#fff3e0" stroke="#e65100" stroke-width="1"/>
+  <text x="452" y="179" text-anchor="middle" font-size="10" fill="#333">Doc Malw</text>
+
+  <line x1="120" y1="132" x2="102" y2="162" stroke="#e65100" stroke-width="1" stroke-dasharray="4,2"/>
+  <line x1="210" y1="132" x2="202" y2="162" stroke="#e65100" stroke-width="1" stroke-dasharray="4,2"/>
+  <line x1="360" y1="132" x2="352" y2="162" stroke="#e65100" stroke-width="1" stroke-dasharray="4,2"/>
+  <line x1="440" y1="132" x2="452" y2="162" stroke="#e65100" stroke-width="1" stroke-dasharray="4,2"/>
+
+  <rect x="270" y="210" width="270" height="75" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+  <text x="405" y="232" text-anchor="middle" font-size="12" font-weight="bold" fill="#2e7d32">Requête : timestamp 10:00→12:00</text>
+  <text x="405" y="252" text-anchor="middle" font-size="11" fill="#333">MongoDB parcourt uniquement</text>
+  <text x="405" y="268" text-anchor="middle" font-size="11" fill="#333">les branches pertinentes</text>
+  <text x="405" y="282" text-anchor="middle" font-size="11" fill="#2e7d32">→ 4 docs au lieu de 11 (IXSCAN)</text>
+</svg>
+<figcaption><strong>Figure 4</strong> — B-tree simplifié sur <code>timestamp</code>. Les valeurs triées permettent de localiser rapidement la plage 10h–12h en ne parcourant que les branches pertinentes (IXSCAN). Sans index, MongoDB lirait tous les documents (COLLSCAN). Un index composé <code>{timestamp: 1, src_ip: 1}</code> trie d'abord par temps, puis par IP — optimal pour « logs de telle IP entre telle et telle heure ».</figcaption>
+</figure>
+
+<div class="box box-erreur"><div class="box-title">⚠️ Erreur fréquente — Trop d'index</div>
+<p>Créer un index sur chaque champ « au cas où » ralentit chaque écriture. Sur un SOC à 10 000 logs/seconde, cela crée un <strong>goulot d'étranglement</strong>.</p>
+<p><strong>Pourquoi c'est dangereux :</strong> Ralentissement de l'ingestion = logs en retard ou perdus. Un attaquant exploite cette fenêtre temporelle pour agir sans détection.</p></div>
+
+<!-- ===== TP 5 ===== -->
+<h2 id="tp5">TP 5 — Index &amp; explain() (20 min)</h2>
+
+<div class="box box-tp"><div class="box-title">🔬 TP 5</div>
+<p><strong>Objectif :</strong> Créer index, mesurer avec <code>explain()</code>, identifier les pièges. <strong>Durée :</strong> 20 min</p></div>
+
+<h4>Étape 1 — Sans index</h4>
+<pre>db.security_logs.find({ src_ip: "192.168.1.105" }).explain("executionStats")
+<span class="c">// Cherchez : "stage": "COLLSCAN", "totalDocsExamined": 11, "nReturned": 3</span></pre>
+
+<h4>Étape 2 — Créer un index simple</h4>
+<pre>db.security_logs.createIndex({ src_ip: 1 })
+<span class="c">// → "src_ip_1"</span></pre>
+
+<h4>Étape 3 — Vérifier l'amélioration</h4>
+<pre>db.security_logs.find({ src_ip: "192.168.1.105" }).explain("executionStats")
+<span class="c">// Maintenant : "stage": "IXSCAN", "totalDocsExamined": 3</span></pre>
+
+<h4>Étape 4 — Index composé</h4>
+<pre>db.security_logs.createIndex({ timestamp: 1, src_ip: 1 })
+
+<span class="c">// Test avec requête temporelle + IP :</span>
+db.security_logs.find({
+  timestamp: { $gte: new Date("2025-03-03T10:00:00Z"),
+               $lte: new Date("2025-03-03T11:00:00Z") },
+  src_ip: "192.168.1.105"
+}).explain("executionStats")
+<span class="c">// → "indexName": "timestamp_1_src_ip_1"</span></pre>
+
+<h4>Étape 5 — Lister les index</h4>
+<pre>db.security_logs.getIndexes()
+<span class="c">// → _id_, src_ip_1, timestamp_1_src_ip_1</span></pre>
+
+<h4>Étape 6 — Piège : prefix rule</h4>
+<pre><span class="c">// Cette requête sur src_ip seul utilise src_ip_1, PAS timestamp_1_src_ip_1</span>
+db.security_logs.find({ src_ip: "10.0.1.200" }).explain("executionStats")
+<span class="c">// Vérifiez "indexName"</span></pre>
+
+<h4>Auto-check TP 5</h4>
+<p><em>Q1 : COLLSCAN vs IXSCAN ?</em></p>
+<div class="correction"><strong>R1 :</strong> COLLSCAN = scan complet (pas d'index). IXSCAN = scan d'index utilisé.</div>
+<p><em>Q2 : <code>{timestamp:1, src_ip:1}</code> accélère-t-il un filtre sur src_ip seul ?</em></p>
+<div class="correction"><strong>R2 :</strong> Non (prefix rule). Il faut un index séparé sur src_ip.</div>
+<p><em>Q3 : Pourquoi pas un index sur chaque champ ?</em></p>
+<div class="correction"><strong>R3 :</strong> Chaque index consomme mémoire et ralentit les écritures. Sur une collection haute ingestion, trop d'index = goulot + retard de détection.</div>
+
+<!-- ===== CHECKPOINT 3 ===== -->
+<h2 id="ck3">Checkpoint 3 — Quiz (10 min, ≈ 195 min)</h2>
+<div class="box box-checkpoint"><div class="box-title">🎯 Checkpoint 3</div>
+<p><strong>Q1 :</strong> Requêtes fréquentes par <code>event_type</code> + <code>timestamp</code>. Quel index composé ?</p>
+<p><strong>Q2 :</strong> Quel stage d'aggregation en premier ? Pourquoi ?</p>
+<p><strong>Q3 :</strong> Pipeline commençant par $group sans $match — risque ?</p></div>
+<div class="correction">
+<strong>C1 :</strong> <code>db.security_logs.createIndex({ timestamp: 1, event_type: 1 })</code> (ou l'inverse selon la requête dominante).<br>
+<strong>C2 :</strong> <code>$match</code> en premier → réduit le volume + exploite les index.<br>
+<strong>C3 :</strong> $group traite TOUS les documents. Sur des millions de logs = consommation massive CPU/RAM → DoS applicatif involontaire.</div>
+
+<!-- ===== BLOC 6 ===== -->
+<h2 id="bloc6">Bloc 6 — Sécurité data-level (10 min)</h2>
+
+<h3>6.1 Minimisation des données</h3>
+<p>Le principe de minimisation (RGPD, art. 5.1.c) impose de ne stocker que le <strong>strictement nécessaire</strong>. En NoSQL, la flexibilité du schéma rend la sur-collecte très facile : rien n'empêche d'ajouter un champ <code>user_password_hash</code> dans un log. Vous devez définir un « contrat de données » : quels champs autorisés par collection, quels champs PII, quels champs interdits.</p>
+
+<h3>6.2 Sur-collecte et champs sensibles</h3>
+<p>La sur-collecte : enregistrer plus que nécessaire. Un log d'authentification avec User-Agent complet, adresse MAC, et contenu HTTP crée un risque inutile si la base est compromise. Pour les PII nécessaires à l'investigation, appliquer un <strong>masquage</strong> : email → <code>"a***@soc.local"</code>.</p>
+
+<h3>6.3 Séparation logique</h3>
+<p>Chaque collection a un périmètre fonctionnel clair. On ne mélange pas logs bruts et données utilisateur. En Séance 3 : RBAC MongoDB pour accès par collection.</p>
+
+<div class="box box-securite"><div class="box-title">🔒 Sécurité — La sur-collecte est une bombe à retardement</div>
+<p>Si <code>security_logs</code> contient emails complets, FQDNs internes, tokens d'auth dans raw_log, une fuite expose l'infrastructure et l'identité des utilisateurs. Chaque champ stocké est un champ à protéger.</p></div>
+
+<!-- ===== TP 6 ===== -->
+<h2 id="tp6">TP 6 — Sur-collecte, PII &amp; Projections sûres (20 min)</h2>
+
+<div class="box box-tp"><div class="box-title">🔬 TP 6</div>
+<p><strong>Objectif :</strong> Identifier la sur-collecte, masquer les PII, produire une checklist sécurité. <strong>Durée :</strong> 20 min</p></div>
+
+<h4>Étape 1 — Identifier la sur-collecte</h4>
+<pre>db.security_logs.findOne({ event_type: "malware_detected" })</pre>
+<p>Le champ <code>raw_log</code> contient des chemins fichiers internes, noms de processus, voire fragments de données. Accès restreint aux analystes seniors uniquement.</p>
+
+<h4>Étape 2 — Masquer les emails</h4>
+<pre>db.users.updateMany({}, [
+  { $set: { email_masked: {
+      $concat: [
+        { $substr: ["$email", 0, 1] },
+        "***@",
+        { $arrayElemAt: [{ $split: ["$email","@"] }, 1] }
+      ]
+  }}}
+])
+
+db.users.find({}, { username: 1, email: 1, email_masked: 1, _id: 0 })
+<span class="c">// → alice → "a***@soc.local", bob → "b***@soc.local"</span></pre>
+
+<h4>Étape 3 — Projection sûre pour un viewer</h4>
+<pre>db.users.find(
+  { is_active: true },
+  { username: 1, team: 1, roles: 1, email_masked: 1, _id: 0 }
+)
+<span class="c">// Le champ "email" complet N'est PAS retourné</span></pre>
+
+<h4>Étape 4 — Exclure raw_log pour les viewers</h4>
+<pre><span class="c">// Dashboard viewer : pas de raw_log</span>
+db.security_logs.find(
+  { severity: "critical" },
+  { raw_log: 0 }
+)</pre>
+
+<h4>Étape 5 — Checklist sécurité (livrable)</h4>
+<pre>## Checklist Sécurité Data — SOC-lite
+
+1. [ ] Périmètre fonctionnel par collection : ___________
+2. [ ] PII identifiés : ___________
+3. [ ] PII masqués pour accès non privilégiés : ___________
+4. [ ] Projections définies par rôle (viewer/analyst) : ___________
+5. [ ] Champs haute sensibilité (raw_log) : accès restreint à ___________
+6. [ ] Dénormalisation ne duplique pas de PII : ___________
+7. [ ] Index ne révèlent pas de patterns sensibles : ___________
+8. [ ] Pas de sur-collecte : champs inutiles repérés ___________</pre>
+
+<h4>Auto-check TP 6</h4>
+<p><em>Q1 : Pourquoi masquer plutôt que supprimer l'email ?</em></p>
+<div class="correction"><strong>R1 :</strong> Le masquage conserve une info partielle utile (corrélation) sans exposer l'adresse complète.</div>
+<p><em>Q2 : Un index sur <code>user_attempted</code> peut-il poser un problème ?</em></p>
+<div class="correction"><strong>R2 :</strong> Oui. Un attaquant avec accès en lecture à l'index pourrait énumérer les noms d'utilisateur tentés (user enumeration).</div>
+<p><em>Q3 : <code>{ raw_log: 0 }</code> vs <code>{ src_ip: 1, timestamp: 1, _id: 0 }</code> ?</em></p>
+<div class="correction"><strong>R3 :</strong> L'exclusion (<code>raw_log: 0</code>) retourne tous les champs sauf celui-ci, y compris de futurs champs ajoutés par erreur. L'inclusion (<code>src_ip: 1, timestamp: 1</code>) ne retourne QUE ces champs → <strong>plus sûr</strong>.</div>
+
+<div class="box box-retenir"><div class="box-title">✅ À retenir — Sécurité data-level</div>
+<p>Trois principes : <strong>1) Minimisation</strong> — ne stocker que le nécessaire. <strong>2) Masquage</strong> — PII tronqués pour non-privilégiés. <strong>3) Projection par inclusion</strong> — lister les champs autorisés plutôt qu'exclure les interdits.</p></div>
+
+<!-- ===== CONCLUSION ===== -->
+<h2 id="conclusion">Conclusion &amp; Préparation Séance 3</h2>
+
+<h3>Résumé</h3>
+<p>En 4 heures, vous avez construit un modèle SOC-lite complet. Vous savez choisir entre embed et reference selon le volume, la fréquence d'accès et les exigences sécurité. Vous maîtrisez les 5 patterns de modélisation, les requêtes avancées (filtres, tri, pagination, projection), l'aggregation pipeline, et les index avec leur évaluation via <code>explain()</code>. Vous avez établi une checklist de sécurité data-level.</p>
+
+<h3>Séance 3 : Hardening MongoDB</h3>
+<p>Authentification, RBAC, configuration réseau, TLS, validation de schéma (<code>$jsonSchema</code>). Gardez votre base <code>soc_lite</code> intacte. Familiarisez-vous avec les built-in roles MongoDB.</p>
+
+<!-- ===== DEVOIR ===== -->
+<h2 id="devoir">Devoir maison (30–45 min)</h2>
+
+<div class="devoir">
+<h3>Mini dataset IDS + Requêtes + Index</h3>
+
+<h4>Partie 1 — Insertion (10 min)</h4>
+<pre>db.ids_alerts.insertMany([
+  { timestamp: new Date("2025-03-04T08:00:00Z"), rule_id: "SID-1001",
+    rule_name: "SQL Injection Attempt", src_ip: "203.0.113.15",
+    dst_ip: "10.0.0.5", severity: "high", action: "alert", sensor: "ids-dmz-01" },
+  { timestamp: new Date("2025-03-04T08:05:00Z"), rule_id: "SID-1001",
+    rule_name: "SQL Injection Attempt", src_ip: "203.0.113.15",
+    dst_ip: "10.0.0.5", severity: "high", action: "alert", sensor: "ids-dmz-01" },
+  { timestamp: new Date("2025-03-04T09:00:00Z"), rule_id: "SID-2050",
+    rule_name: "DNS Tunneling Detected", src_ip: "10.0.2.100",
+    dst_ip: "8.8.8.8", severity: "critical", action: "block", sensor: "ids-internal-01" },
+  { timestamp: new Date("2025-03-04T10:30:00Z"), rule_id: "SID-3001",
+    rule_name: "Suspicious Outbound Connection", src_ip: "10.0.0.10",
+    dst_ip: "198.51.100.77", severity: "medium", action: "alert", sensor: "ids-internal-01" },
+  { timestamp: new Date("2025-03-04T11:00:00Z"), rule_id: "SID-1001",
+    rule_name: "SQL Injection Attempt", src_ip: "203.0.113.15",
+    dst_ip: "10.0.0.5", severity: "high", action: "drop", sensor: "ids-dmz-01" }
+])</pre>
+
+<h4>Partie 2 — 10 requêtes (20 min)</h4>
+<ol>
+  <li>Alertes severity "high" ou "critical"</li>
+  <li>Alertes SID-1001, triées par timestamp</li>
+  <li>Nombre d'alertes par <code>rule_id</code> (aggregation)</li>
+  <li>Alertes 8h–10h, projection : src_ip, rule_name, timestamp</li>
+  <li>Les 2 alertes les plus récentes</li>
+  <li>Top IPs sources (aggregation)</li>
+  <li>Alertes action "block" ou "drop"</li>
+  <li>Nombre d'alertes par sensor (aggregation)</li>
+  <li>Alertes critiques du réseau interne (src_ip commençant par "10.")</li>
+  <li>Alerte la plus ancienne</li>
+</ol>
+
+<h4>Partie 3 — 2 index à proposer + justification (10 min)</h4>
+<p>Pour chaque index : champ(s), type (simple/composé), requête accélérée, justification.</p>
+<p><strong>Rendu :</strong> Fichier texte/Markdown avec requêtes + résultats + index. À rendre Séance 3.</p>
+</div>
+
+<!-- ===== ANNEXES ===== -->
+<h2 id="annexes">Annexes</h2>
+
+<h3>A. Commandes mongosh essentielles</h3>
+<table>
+<tr><th>Action</th><th>Commande</th></tr>
+<tr><td>Changer de base</td><td><code>use nom_base</code></td></tr>
+<tr><td>Lister collections</td><td><code>show collections</code></td></tr>
+<tr><td>Insérer un</td><td><code>db.col.insertOne({...})</code></td></tr>
+<tr><td>Insérer plusieurs</td><td><code>db.col.insertMany([...])</code></td></tr>
+<tr><td>Chercher</td><td><code>db.col.find({filtre})</code></td></tr>
+<tr><td>Projection</td><td><code>db.col.find({}, {champ:1})</code></td></tr>
+<tr><td>Trier</td><td><code>.sort({champ:-1})</code></td></tr>
+<tr><td>Limiter</td><td><code>.limit(n)</code></td></tr>
+<tr><td>Compter</td><td><code>db.col.countDocuments({})</code></td></tr>
+<tr><td>Mettre à jour</td><td><code>db.col.updateOne({}, {$set:{}})</code></td></tr>
+<tr><td>Push tableau</td><td><code>db.col.updateOne({}, {$push:{}})</code></td></tr>
+<tr><td>Aggregation</td><td><code>db.col.aggregate([...])</code></td></tr>
+<tr><td>Créer index</td><td><code>db.col.createIndex({champ:1})</code></td></tr>
+<tr><td>Lister index</td><td><code>db.col.getIndexes()</code></td></tr>
+<tr><td>Explain</td><td><code>.explain("executionStats")</code></td></tr>
+<tr><td>Supprimer index</td><td><code>db.col.dropIndex("nom")</code></td></tr>
+<tr><td>Supprimer collection</td><td><code>db.col.drop()</code></td></tr>
+</table>
+
+<h3>B. Dépannage</h3>
+<div class="depannage"><strong>MongoNetworkError: connect ECONNREFUSED</strong> → Conteneur arrêté. <code>docker ps</code> puis <code>docker start mongo-soc</code>.</div>
+<div class="depannage"><strong>E11000 duplicate key</strong> → Insert relancé. <code>db.col.drop()</code> puis ré-insérer.</div>
+<div class="depannage"><strong>explain() ne montre pas l'index attendu</strong> → Vérifier <code>getIndexes()</code>, prefix rule, ou MongoDB préfère COLLSCAN sur peu de documents.</div>
+<div class="depannage"><strong>Aggregation retourne []</strong> → Vérifier casse ("Critical" ≠ "critical") et types ("22" ≠ 22) dans le $match.</div>
+
+<h3>C. Glossaire</h3>
+<table>
+<tr><th>Terme</th><th>Définition</th></tr>
+<tr><td><strong>Embed</strong></td><td>Imbriquer des données enfants dans le document parent.</td></tr>
+<tr><td><strong>Reference</strong></td><td>Stocker un identifiant pointant vers un document dans une autre collection.</td></tr>
+<tr><td><strong>Index</strong></td><td>Structure B-tree accélérant les recherches par valeurs triées.</td></tr>
+<tr><td><strong>Cardinalité</strong></td><td>Nombre de valeurs distinctes d'un champ. Haute = bon candidat index.</td></tr>
+<tr><td><strong>Projection</strong></td><td>Sélection des champs retournés, limitant l'exposition données.</td></tr>
+<tr><td><strong>Aggregation</strong></td><td>Pipeline d'étapes ($match, $group, $sort) pour résultats calculés.</td></tr>
+<tr><td><strong>COLLSCAN</strong></td><td>Scan complet (pas d'index). Lent sur grosses collections.</td></tr>
+<tr><td><strong>IXSCAN</strong></td><td>Scan d'index. Rapide, ciblé.</td></tr>
+<tr><td><strong>PII</strong></td><td>Personally Identifiable Information.</td></tr>
+<tr><td><strong>Sur-collecte</strong></td><td>Stocker plus que nécessaire → risque disproportionné.</td></tr>
+<tr><td><strong>Dénormalisation</strong></td><td>Duplication volontaire pour accélérer la lecture.</td></tr>
+<tr><td><strong>Prefix rule</strong></td><td>Index {A,B} accélère A ou A+B, pas B seul.</td></tr>
+<tr><td><strong>Append-only</strong></td><td>Écriture seule (jamais modifié). Typique des logs.</td></tr>
+<tr><td><strong>BSON</strong></td><td>Binary JSON, format interne MongoDB.</td></tr>
+</table>
+
+<hr style="margin-top:40px;">
+<p style="text-align:center;color:#888;font-size:.9em;">Module NoSQL Security — Séance 2</p>
+</body>
+</html>

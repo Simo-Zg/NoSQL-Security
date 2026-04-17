@@ -1,0 +1,1711 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Séance 1 — Découvrir NoSQL &amp; MongoDB | Module NoSQL Security</title>
+<style>
+:root {
+  --primary: #1a237e;
+  --secondary: #0d47a1;
+  --accent: #00bcd4;
+  --danger: #c62828;
+  --warning: #f57f17;
+  --success: #2e7d32;
+  --bg: #fafafa;
+  --card: #ffffff;
+  --text: #212121;
+  --muted: #616161;
+  --border: #e0e0e0;
+  --code-bg: #263238;
+  --code-text: #e0e0e0;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  font-size: 15px;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 20px 30px 60px;
+}
+
+h1 { font-size: 2em; color: var(--primary); margin: 30px 0 10px; border-bottom: 3px solid var(--accent); padding-bottom: 8px; }
+h2 { font-size: 1.55em; color: var(--secondary); margin: 28px 0 12px; border-left: 5px solid var(--accent); padding-left: 14px; }
+h3 { font-size: 1.25em; color: var(--primary); margin: 22px 0 8px; }
+h4 { font-size: 1.1em; color: var(--muted); margin: 16px 0 6px; }
+p { margin: 8px 0; }
+ul, ol { margin: 8px 0 8px 26px; }
+li { margin: 4px 0; }
+
+a { color: var(--secondary); }
+a:hover { color: var(--accent); }
+
+table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 0.92em; }
+th, td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+th { background: var(--primary); color: #fff; }
+tr:nth-child(even) { background: #f5f5f5; }
+
+pre, code { font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace; }
+code { background: #eceff1; padding: 2px 5px; border-radius: 3px; font-size: 0.93em; }
+
+pre {
+  background: var(--code-bg);
+  color: var(--code-text);
+  padding: 16px 18px;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 10px 0;
+  font-size: 0.9em;
+  line-height: 1.55;
+}
+pre code { background: none; padding: 0; color: inherit; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px 22px;
+  margin: 16px 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.alert {
+  border-left: 5px solid;
+  padding: 14px 18px;
+  border-radius: 4px;
+  margin: 14px 0;
+}
+.alert-info    { border-color: var(--accent); background: #e0f7fa; }
+.alert-warning { border-color: var(--warning); background: #fff8e1; }
+.alert-danger  { border-color: var(--danger); background: #ffebee; }
+.alert-success { border-color: var(--success); background: #e8f5e9; }
+.alert-title { font-weight: 700; margin-bottom: 4px; }
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.82em;
+  font-weight: 600;
+  color: #fff;
+  margin-right: 6px;
+}
+.badge-cours   { background: var(--secondary); }
+.badge-tp      { background: var(--success); }
+.badge-check   { background: var(--warning); color: #333; }
+.badge-secu    { background: var(--danger); }
+
+.toc { background: #e8eaf6; border-radius: 8px; padding: 18px 24px; margin: 20px 0; }
+.toc h3 { margin-top: 0; }
+.toc ol { margin-left: 20px; }
+.toc li { margin: 3px 0; }
+
+.page-garde {
+  text-align: center;
+  padding: 40px 20px 30px;
+  border-bottom: 3px solid var(--accent);
+  margin-bottom: 30px;
+}
+.page-garde h1 { border: none; font-size: 2.3em; }
+.page-garde .subtitle { font-size: 1.3em; color: var(--secondary); margin: 6px 0 20px; }
+.meta-table { display: inline-block; text-align: left; margin-top: 10px; }
+.meta-table td { border: none; padding: 3px 12px; }
+.meta-table td:first-child { font-weight: 600; color: var(--primary); }
+
+.result-box {
+  background: #e8f5e9;
+  border: 1px dashed var(--success);
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin: 10px 0;
+  font-size: 0.92em;
+}
+
+.figure-box {
+  margin: 20px 0;
+  text-align: center;
+}
+.figure-box svg { max-width: 100%; height: auto; }
+.figure-caption { font-style: italic; color: var(--muted); margin-top: 6px; font-size: 0.9em; }
+.figure-explain { text-align: left; margin: 10px 0; font-size: 0.95em; }
+
+.checklist li { list-style: none; margin-left: -10px; }
+.checklist li::before { content: "☐ "; font-size: 1.1em; }
+
+.autocheck { background: #fff3e0; border: 1px solid #ffcc02; padding: 14px; border-radius: 6px; margin: 12px 0; }
+.autocheck h4 { color: var(--warning); margin-top: 0; }
+
+.depannage { background: #fce4ec; padding: 14px; border-radius: 6px; margin: 12px 0; }
+.depannage h4 { color: var(--danger); margin-top: 0; }
+
+.retenir { background: #e3f2fd; border: 2px solid var(--secondary); padding: 14px 18px; border-radius: 6px; margin: 14px 0; }
+.retenir h4::before { content: "📌 "; }
+
+.erreur-freq { background: #ffebee; border-left: 4px solid var(--danger); padding: 12px 16px; margin: 12px 0; border-radius: 0 6px 6px 0; }
+.erreur-freq h4 { color: var(--danger); }
+.erreur-freq h4::before { content: "⚠️ "; }
+
+.micro-q { background: #f3e5f5; border-left: 4px solid #7b1fa2; padding: 10px 14px; margin: 10px 0; border-radius: 0 6px 6px 0; }
+.micro-q strong { color: #7b1fa2; }
+
+.gold-rules { background: linear-gradient(135deg, #fff8e1, #fffde7); border: 2px solid #ffc107; padding: 18px; border-radius: 8px; margin: 16px 0; }
+.gold-rules h3 { color: #e65100; }
+.gold-rules li { margin: 5px 0; }
+
+.timeline-minute { font-weight: 700; color: var(--primary); white-space: nowrap; min-width: 80px; }
+
+@media print {
+  body { font-size: 12px; max-width: 100%; padding: 10px; }
+  pre { font-size: 10px; white-space: pre-wrap; }
+  .card { box-shadow: none; border: 1px solid #ccc; }
+  h1, h2 { page-break-after: avoid; }
+  .card, .alert, pre { page-break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!--                     PAGE DE GARDE                             -->
+<!-- ============================================================ -->
+<div class="page-garde">
+  <h1>Module : NoSQL Security</h1>
+  <div class="subtitle">Séance 1 — Découvrir NoSQL &amp; Prise en main de MongoDB</div>
+  <p style="font-size:1.1em; color: var(--muted);">Support de cours &amp; Travaux Pratiques intégrés</p>
+  <table class="meta-table">
+    <tr><td>Durée</td><td>4 heures (avec pauses)</td></tr>
+    <tr><td>Public</td><td>2<sup>eme</sup> année Cybersécurité — Débutants NoSQL</td></tr>
+    <tr><td>Date</td><td>2026-02-25</td></tr>
+    <tr><td>Prérequis</td><td>Réseau (IP/port), Terminal Linux basique, JSON très simple</td></tr>
+    <tr><td>Outils</td><td>Docker / Docker Compose, MongoDB 7+, mongosh, curl (opt.), nmap (opt.)</td></tr>
+    <tr><td>Livrables</td><td>Checklist sécurité complétée + captures de sorties mongosh</td></tr>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<!--                TABLE DES MATIÈRES                            -->
+<!-- ============================================================ -->
+<div class="toc" id="toc">
+  <h3>📖 Table des matières</h3>
+  <ol>
+    <li><a href="#competences">Compétences visées &amp; critères de réussite</a></li>
+    <li><a href="#timeline">Timeline minute par minute</a></li>
+    <li><a href="#bloc1">Bloc 1 — SQL vs NoSQL : Comprendre les différences</a></li>
+    <li><a href="#bloc2">Bloc 2 — JSON &amp; le modèle Document</a></li>
+    <li><a href="#checkpoint1">⏱ Checkpoint 1 (≈ 1h00)</a></li>
+    <li><a href="#bloc3">Bloc 3 — Architecture du Lab (Docker + MongoDB)</a></li>
+    <li><a href="#bloc4">Bloc 4 — Connexion, base, collection &amp; dataset security_logs</a></li>
+    <li><a href="#checkpoint2">⏱ Checkpoint 2 (≈ 2h00)</a></li>
+    <li><a href="#bloc5">Bloc 5 — CRUD complet</a></li>
+    <li><a href="#bloc6">Bloc 6 — Requêtes avancées (filtres, tri, projection)</a></li>
+    <li><a href="#checkpoint3">⏱ Checkpoint 3 (≈ 3h15)</a></li>
+    <li><a href="#bloc7">Bloc 7 — Sécurité « by default » : surface d'attaque MongoDB</a></li>
+    <li><a href="#conclusion">Conclusion &amp; préparation Séance 2</a></li>
+    <li><a href="#devoir">Devoir maison</a></li>
+    <li><a href="#annexes">Annexes (commandes, dépannage, glossaire)</a></li>
+  </ol>
+</div>
+
+<!-- ============================================================ -->
+<!--          1. COMPÉTENCES VISÉES & CRITÈRES                    -->
+<!-- ============================================================ -->
+<h1 id="competences">1. Compétences visées &amp; critères de réussite</h1>
+
+<table>
+  <thead>
+    <tr><th>#</th><th>Compétence</th><th>Critère de réussite observable</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>C1</td><td>Expliquer les différences SQL / NoSQL</td><td>L'étudiant cite au moins 3 différences et donne un cas d'usage pertinent pour chaque paradigme.</td></tr>
+    <tr><td>C2</td><td>Comprendre le modèle Document (base / collection / document / champ / <code>_id</code>)</td><td>L'étudiant dessine la hiérarchie et identifie chaque niveau sur un exemple concret.</td></tr>
+    <tr><td>C3</td><td>Lancer MongoDB via Docker et se connecter avec <code>mongosh</code></td><td>Le conteneur tourne, <code>mongosh</code> affiche le prompt <code>test&gt;</code> ou <code>noseclab&gt;</code>.</td></tr>
+    <tr><td>C4</td><td>Réaliser les opérations CRUD + requêtes avec filtres, tri, projection</td><td>L'étudiant insère 10+ documents, lit avec filtre, met à jour un champ, supprime un document, et utilise <code>sort</code>/<code>limit</code>/<code>projection</code>.</td></tr>
+    <tr><td>C5</td><td>Identifier les failles de configuration par défaut (port, bind, auth)</td><td>L'étudiant vérifie le port exposé, l'état de l'authentification, et formule 5 règles de sécurité.</td></tr>
+    <tr><td>C6</td><td>Produire un mini-livrable (checklist + preuves)</td><td>Document rendu avec captures et réponses aux questions.</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<!--          2. TIMELINE MINUTE PAR MINUTE                        -->
+<!-- ============================================================ -->
+<
+
+<!-- ============================================================ -->
+<!--          BLOC 1 — SQL vs NoSQL                               -->
+<!-- ============================================================ -->
+<h1 id="bloc1">Bloc 1 — SQL vs NoSQL : Comprendre les différences</h1>
+<p><span class="badge badge-cours">MICRO-COURS</span> Durée : 20 min</p>
+
+<h3>1.1 Le monde des bases de données relationnelles (SQL)</h3>
+<p>Depuis les années 1970, la quasi-totalité des applications stockent leurs données dans des <strong>bases de données relationnelles</strong> (aussi appelées <em>SQL databases</em>). Le principe est simple : les données sont organisées en <strong>tables</strong> avec des <strong>lignes</strong> (chaque ligne représente un enregistrement) et des <strong>colonnes</strong> (chaque colonne représente un attribut). Par exemple, une table <code>utilisateurs</code> aurait les colonnes <code>id</code>, <code>nom</code>, <code>email</code>, <code>date_creation</code>. Chaque utilisateur occupe une ligne. Pour interroger ces tables, on utilise le langage <strong>SQL</strong> (Structured Query Language) : <code>SELECT nom FROM utilisateurs WHERE id = 42;</code>.</p>
+
+<p>Les bases relationnelles imposent un <strong>schéma rigide</strong> : avant d'insérer des données, il faut définir précisément la structure de chaque table (noms de colonnes, types de données, contraintes). C'est comme un formulaire papier : si le formulaire n'a pas de case « numéro de téléphone », vous ne pouvez pas l'ajouter sans modifier le formulaire lui-même. Cette rigidité garantit la <strong>cohérence</strong> des données mais rend les modifications de structure coûteuses, surtout quand la base contient des millions de lignes.</p>
+
+<p>Les bases SQL sont excellentes pour les données très structurées avec des <strong>relations</strong> entre tables (d'où le nom « relationnelle »). Par exemple, une table <code>commandes</code> est liée à une table <code>clients</code> via une clé étrangère. Cependant, elles peuvent devenir lentes lorsque le volume de données explose ou lorsque la structure des données varie beaucoup d'un enregistrement à l'autre — ce qui est précisément le cas des <strong>logs de sécurité</strong>.</p>
+
+<h3>1.2 L'émergence du NoSQL</h3>
+<p>Au début des années 2000, des entreprises comme Google, Amazon et Facebook ont constaté que les bases SQL classiques ne suffisaient plus pour gérer des <strong>milliards de requêtes par jour</strong> avec des structures de données très variées. Le terme <strong>NoSQL</strong> est apparu — il signifie « Not Only SQL », c'est-à-dire « pas seulement SQL ». Ce n'est pas un rejet du SQL, mais une <em>alternative complémentaire</em>.</p>
+
+<p>Le NoSQL regroupe en réalité <strong>plusieurs familles</strong> de bases de données, chacune optimisée pour un type de problème particulier. Les quatre grandes familles sont : les bases <strong>Document</strong> (MongoDB, CouchDB) qui stockent des objets JSON flexibles ; les bases <strong>Clé-Valeur</strong> (Redis, DynamoDB) qui fonctionnent comme un dictionnaire géant ; les bases <strong>Colonnes larges</strong> (Cassandra, HBase) optimisées pour les écritures massives ; et les bases <strong>Graphe</strong> (Neo4j, ArangoDB) qui modélisent les relations complexes entre entités. Dans ce module, nous nous concentrons sur la famille <strong>Document</strong> avec <strong>MongoDB</strong>, car c'est la plus répandue et la plus pertinente pour les logs de cybersécurité.</p>
+
+<p>La différence fondamentale est le <strong>schéma flexible</strong> : en NoSQL document, chaque enregistrement (appelé « document ») peut avoir une structure différente. Un log de connexion peut contenir un champ <code>device</code>, tandis qu'un log de pare-feu n'en a pas besoin. Pas besoin de modifier un schéma global. C'est comme passer d'un formulaire rigide à des <strong>fiches libres</strong> : chaque fiche peut contenir les informations pertinentes sans contrainte de format.</p>
+
+<h3>1.3 Comparaison côte à côte</h3>
+
+<table>
+  <thead>
+    <tr><th>Critère</th><th>SQL (ex : MySQL, PostgreSQL)</th><th>NoSQL Document (ex : MongoDB)</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Structure</td><td>Tables, lignes, colonnes</td><td>Collections, documents JSON</td></tr>
+    <tr><td>Schéma</td><td>Rigide (défini avant insertion)</td><td>Flexible (chaque document peut différer)</td></tr>
+    <tr><td>Langage de requête</td><td>SQL standardisé</td><td>API/méthodes spécifiques (ex : <code>find()</code>)</td></tr>
+    <tr><td>Relations</td><td>Jointures (JOIN) entre tables</td><td>Documents imbriqués ou références</td></tr>
+    <tr><td>Scalabilité</td><td>Verticale (machine plus puissante)</td><td>Horizontale (ajout de machines / sharding)</td></tr>
+    <tr><td>Cas d'usage typique</td><td>Comptabilité, ERP, transactions bancaires</td><td>Logs, IoT, catalogues produits, temps réel</td></tr>
+    <tr><td>Cohérence (ACID)</td><td>Forte par défaut</td><td>Éventuelle / configurable</td></tr>
+  </tbody>
+</table>
+
+<h3>1.4 Exemple concret en cybersécurité</h3>
+<p>Imaginons un <strong>SIEM</strong> (Security Information and Event Management) qui collecte des logs de sources différentes : pare-feu, serveur web, antivirus, badge d'accès physique. En SQL, il faudrait soit créer une table par source (complexe à maintenir), soit créer une table unique avec énormément de colonnes dont la plupart seraient vides (gaspillage). En NoSQL Document, chaque log est un document autonome avec exactement les champs nécessaires. Un log pare-feu contiendra <code>src_ip</code>, <code>dst_ip</code>, <code>port</code>, <code>protocol</code>, tandis qu'un log badge contiendra <code>badge_id</code>, <code>door</code>, <code>building</code>. Les deux coexistent dans la même collection sans problème.</p>
+
+<!-- Figure 1 -->
+<div class="figure-box">
+  <svg viewBox="0 0 800 340" xmlns="http://www.w3.org/2000/svg" style="max-width:750px;">
+    <defs>
+      <linearGradient id="sqlGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#e3f2fd"/><stop offset="100%" stop-color="#bbdefb"/></linearGradient>
+      <linearGradient id="nosqlGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#e8f5e9"/><stop offset="100%" stop-color="#c8e6c9"/></linearGradient>
+    </defs>
+    <!-- SQL side -->
+    <rect x="20" y="20" width="360" height="300" rx="12" fill="url(#sqlGrad)" stroke="#1565c0" stroke-width="2"/>
+    <text x="200" y="52" text-anchor="middle" font-size="16" font-weight="bold" fill="#0d47a1">SQL — Table relationnelle</text>
+    <!-- Table header -->
+    <rect x="40" y="68" width="320" height="30" rx="4" fill="#1565c0"/>
+    <text x="60" y="88" font-size="12" fill="#fff" font-weight="600">id</text>
+    <text x="110" y="88" font-size="12" fill="#fff" font-weight="600">src_ip</text>
+    <text x="190" y="88" font-size="12" fill="#fff" font-weight="600">user</text>
+    <text x="260" y="88" font-size="12" fill="#fff" font-weight="600">action</text>
+    <text x="330" y="88" font-size="12" fill="#fff" font-weight="600">device</text>
+    <!-- Rows -->
+    <rect x="40" y="98" width="320" height="26" fill="#fff" stroke="#90caf9"/>
+    <text x="60" y="116" font-size="11" fill="#333">1</text><text x="110" y="116" font-size="11" fill="#333">10.0.0.5</text><text x="190" y="116" font-size="11" fill="#333">alice</text><text x="260" y="116" font-size="11" fill="#333">login</text><text x="330" y="116" font-size="11" fill="#333">laptop</text>
+    <rect x="40" y="124" width="320" height="26" fill="#e3f2fd" stroke="#90caf9"/>
+    <text x="60" y="142" font-size="11" fill="#333">2</text><text x="110" y="142" font-size="11" fill="#333">10.0.0.8</text><text x="190" y="142" font-size="11" fill="#333">bob</text><text x="260" y="142" font-size="11" fill="#333">logout</text><text x="330" y="142" font-size="11" fill="#333">NULL</text>
+    <rect x="40" y="150" width="320" height="26" fill="#fff" stroke="#90caf9"/>
+    <text x="60" y="168" font-size="11" fill="#333">3</text><text x="110" y="168" font-size="11" fill="#333">192.168.1.1</text><text x="190" y="168" font-size="11" fill="#333">NULL</text><text x="260" y="168" font-size="11" fill="#333">scan</text><text x="330" y="168" font-size="11" fill="#333">NULL</text>
+    <!-- Note -->
+    <text x="200" y="210" text-anchor="middle" font-size="11" fill="#c62828" font-style="italic">↑ Colonnes vides (NULL) = gaspillage</text>
+    <text x="200" y="228" text-anchor="middle" font-size="11" fill="#c62828" font-style="italic">Schéma rigide : toutes les lignes ont</text>
+    <text x="200" y="244" text-anchor="middle" font-size="11" fill="#c62828" font-style="italic">les mêmes colonnes, même si inutiles.</text>
+
+    <!-- NoSQL side -->
+    <rect x="420" y="20" width="360" height="300" rx="12" fill="url(#nosqlGrad)" stroke="#2e7d32" stroke-width="2"/>
+    <text x="600" y="52" text-anchor="middle" font-size="16" font-weight="bold" fill="#1b5e20">NoSQL — Documents JSON</text>
+    <!-- Doc 1 -->
+    <rect x="440" y="66" width="320" height="62" rx="6" fill="#fff" stroke="#66bb6a" stroke-width="1.5"/>
+    <text x="450" y="82" font-size="10" fill="#888">Document 1</text>
+    <text x="450" y="98" font-size="11" fill="#333" font-family="monospace">{ "src_ip": "10.0.0.5",</text>
+    <text x="460" y="114" font-size="11" fill="#333" font-family="monospace">"user": "alice", "action": "login",</text>
+    <text x="460" y="122" font-size="11" fill="#333" font-family="monospace">"device": "laptop" }</text>
+    <!-- Doc 2 -->
+    <rect x="440" y="136" width="320" height="52" rx="6" fill="#fff" stroke="#66bb6a" stroke-width="1.5"/>
+    <text x="450" y="152" font-size="10" fill="#888">Document 2</text>
+    <text x="450" y="168" font-size="11" fill="#333" font-family="monospace">{ "src_ip": "10.0.0.8",</text>
+    <text x="460" y="180" font-size="11" fill="#333" font-family="monospace">"user": "bob", "action": "logout" }</text>
+    <!-- Doc 3 -->
+    <rect x="440" y="196" width="320" height="52" rx="6" fill="#fff" stroke="#66bb6a" stroke-width="1.5"/>
+    <text x="450" y="212" font-size="10" fill="#888">Document 3</text>
+    <text x="450" y="228" font-size="11" fill="#333" font-family="monospace">{ "src_ip": "192.168.1.1",</text>
+    <text x="460" y="240" font-size="11" fill="#333" font-family="monospace">"action": "scan", "port": 22 }</text>
+    <!-- Note -->
+    <text x="600" y="275" text-anchor="middle" font-size="11" fill="#2e7d32" font-style="italic">↑ Chaque document a ses propres champs</text>
+    <text x="600" y="293" text-anchor="middle" font-size="11" fill="#2e7d32" font-style="italic">Pas de NULL, pas de gaspillage.</text>
+    <text x="600" y="311" text-anchor="middle" font-size="11" fill="#2e7d32" font-style="italic">Schéma flexible : adaptable par document.</text>
+  </svg>
+  <div class="figure-caption">Figure 1 — Comparaison SQL (table rigide) vs NoSQL Document (documents flexibles)</div>
+  <div class="figure-explain">
+    <p>Cette figure illustre la différence fondamentale entre les deux approches. À gauche, la table SQL impose une structure identique à toutes les lignes : même quand un champ n'est pas pertinent (par exemple, <code>device</code> pour un scan réseau), la colonne existe et contient NULL. C'est un gaspillage d'espace et une source de complexité dans les requêtes. À droite, chaque document JSON ne contient que les champs réellement utiles. Le document 3 ajoute un champ <code>port</code> qui n'existe pas dans les autres — c'est parfaitement valide. Cette flexibilité est particulièrement précieuse en cybersécurité, où les sources de logs ont des formats très différents les uns des autres.</p>
+  </div>
+</div>
+
+<div class="retenir">
+  <h4>À retenir</h4>
+  <ul>
+    <li><strong>SQL</strong> = tables rigides, schéma défini à l'avance, excellent pour les données structurées et les transactions.</li>
+    <li><strong>NoSQL Document</strong> = documents JSON flexibles, schéma libre, excellent pour les données hétérogènes et le volume.</li>
+    <li>NoSQL ne remplace pas SQL : ce sont des outils complémentaires. Le choix dépend du <strong>problème à résoudre</strong>.</li>
+    <li>En cybersécurité, les logs hétérogènes sont un cas d'usage idéal pour le NoSQL document.</li>
+  </ul>
+</div>
+
+<div class="erreur-freq">
+  <h4>Erreur fréquente : « NoSQL est plus moderne donc meilleur que SQL »</h4>
+  <p><strong>Pourquoi c'est dangereux :</strong> Choisir NoSQL pour une application bancaire qui nécessite des transactions ACID strictes peut mener à des <strong>incohérences de données</strong> catastrophiques (double débit, perte de transaction). En sécurité, utiliser le mauvais outil peut aussi signifier perdre des logs critiques lors d'un incident. Le bon réflexe : analyser le besoin <em>avant</em> de choisir la technologie.</p>
+</div>
+
+<div class="micro-q">
+  <strong>🧠 Micro-question :</strong> Vous devez stocker les résultats de scans de vulnérabilités provenant de 5 outils différents (Nmap, Nessus, OpenVAS, Nikto, Burp), chacun ayant un format de sortie différent. SQL ou NoSQL Document ? Pourquoi ?
+</div>
+
+<!-- Mini-TP 1 -->
+<div class="card">
+  <h3><span class="badge badge-tp">MINI-TP 1</span> Quiz &amp; cas pratiques SQL vs NoSQL</h3>
+  <p><strong>Objectif :</strong> Vérifier la compréhension des différences SQL/NoSQL sur des cas concrets.</p>
+  <p><strong>Durée estimée :</strong> 15 minutes</p>
+  <p><strong>Prérequis :</strong> Avoir suivi le micro-cours Bloc 1.</p>
+
+  <h4>Exercice 1 — Classez ces cas d'usage</h4>
+  <p>Pour chaque situation, indiquez si <strong>SQL</strong> ou <strong>NoSQL Document</strong> serait le choix le plus adapté, et justifiez en une phrase :</p>
+  <ol>
+    <li>Application de paie d'une entreprise (salaires, cotisations, bulletins).</li>
+    <li>Collecte en temps réel de logs de 200 capteurs IoT avec des formats variés.</li>
+    <li>Système de réservation de billets d'avion (places numérotées, paiement).</li>
+    <li>Stockage des alertes d'un IDS (Intrusion Detection System) recevant 50 000 événements/seconde.</li>
+    <li>Annuaire de contacts avec des champs variables (certains ont un fax, d'autres non).</li>
+  </ol>
+
+  <h4>Exercice 2 — Vrai ou Faux</h4>
+  <ol>
+    <li>En NoSQL Document, tous les documents d'une collection doivent avoir exactement les mêmes champs. <strong>(V/F)</strong></li>
+    <li>SQL signifie « Structured Query Language ». <strong>(V/F)</strong></li>
+    <li>MongoDB est une base de données de type Graphe. <strong>(V/F)</strong></li>
+    <li>NoSQL signifie « No SQL du tout ». <strong>(V/F)</strong></li>
+    <li>Une base NoSQL peut être un bon choix pour stocker des logs de cybersécurité. <strong>(V/F)</strong></li>
+  </ol>
+
+  <div class="autocheck">
+    <h4>✅ Auto-correction</h4>
+    <p><strong>Exercice 1 :</strong> 1→SQL (transactions ACID obligatoires), 2→NoSQL (volume + formats variés), 3→SQL (transactions critiques, places limitées), 4→NoSQL (volume massif, structure variable), 5→NoSQL (schéma flexible).</p>
+    <p><strong>Exercice 2 :</strong> 1→Faux, 2→Vrai, 3→Faux (c'est Document), 4→Faux (« Not Only SQL »), 5→Vrai.</p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--          BLOC 2 — JSON & le modèle Document                  -->
+<!-- ============================================================ -->
+<h1 id="bloc2">Bloc 2 — JSON &amp; le modèle Document</h1>
+<p><span class="badge badge-cours">MICRO-COURS</span> Durée : 15 min</p>
+
+<h3>2.1 Qu'est-ce que JSON ?</h3>
+<p><strong>JSON</strong> (JavaScript Object Notation) est un format de texte léger pour représenter des données structurées. Il est lisible par les humains et facile à traiter par les machines. Un objet JSON est délimité par des accolades <code>{ }</code> et contient des paires <strong>clé : valeur</strong>. Les clés sont toujours des chaînes de caractères entre guillemets. Les valeurs peuvent être des chaînes (<code>"alice"</code>), des nombres (<code>22</code>), des booléens (<code>true</code>/<code>false</code>), des tableaux (<code>[1, 2, 3]</code>), d'autres objets JSON (imbrication), ou <code>null</code>.</p>
+
+<p>Pensez au JSON comme à une <strong>fiche d'incident</strong> que remplirait un analyste SOC (Security Operations Center). Chaque fiche a un format libre : l'analyste note les informations pertinentes sans être contraint par un formulaire rigide. Une fiche pour une tentative de brute-force contiendra l'IP source, le nombre de tentatives et les comptes ciblés, tandis qu'une fiche pour un malware contiendra le hash du fichier, le chemin et le moteur antivirus qui l'a détecté.</p>
+
+<p>Voici un exemple de document JSON représentant un log de sécurité :</p>
+<pre><code>{
+  "timestamp": "2026-02-25T09:15:30Z",
+  "src_ip": "192.168.1.105",
+  "user": "jdupont",
+  "action": "login_failed",
+  "status": "failure",
+  "device": "workstation-PC42",
+  "geo": {
+    "country": "FR",
+    "city": "Paris"
+  },
+  "severity": "warning"
+}</code></pre>
+
+<h3>2.2 Le modèle Document dans MongoDB</h3>
+<p>MongoDB organise les données en trois niveaux hiérarchiques. Au sommet, une <strong>base de données</strong> (<em>database</em>) regroupe des données liées à un même projet ou domaine — par exemple <code>noseclab</code> pour notre laboratoire de sécurité. À l'intérieur d'une base, les données sont organisées en <strong>collections</strong> — l'équivalent approximatif d'une table SQL, mais sans schéma imposé. Par exemple, la collection <code>security_logs</code>. Enfin, chaque enregistrement individuel est un <strong>document</strong> — un objet JSON (techniquement BSON, une version binaire de JSON utilisée par MongoDB pour l'efficacité).</p>
+
+<p>Chaque document possède obligatoirement un champ <code>_id</code> qui sert d'<strong>identifiant unique</strong>. Si vous n'en fournissez pas lors de l'insertion, MongoDB en génère un automatiquement sous la forme d'un <strong>ObjectId</strong>, une chaîne de 24 caractères hexadécimaux qui encode la date de création, un identifiant machine, un identifiant de processus et un compteur. Cet <code>_id</code> est <strong>immuable</strong> : une fois créé, il ne peut pas être modifié.</p>
+
+<!-- Figure 3 : Structure DB/Collection/Document -->
+<div class="figure-box">
+  <svg viewBox="0 0 700 310" xmlns="http://www.w3.org/2000/svg" style="max-width:680px;">
+    <!-- Database -->
+    <rect x="20" y="10" width="660" height="290" rx="14" fill="#e8eaf6" stroke="#3949ab" stroke-width="2.5"/>
+    <text x="40" y="36" font-size="15" font-weight="bold" fill="#1a237e">🗄 Base de données : noseclab</text>
+    <!-- Collection 1 -->
+    <rect x="50" y="52" width="600" height="110" rx="10" fill="#e3f2fd" stroke="#1976d2" stroke-width="2"/>
+    <text x="70" y="74" font-size="13" font-weight="bold" fill="#0d47a1">📁 Collection : security_logs</text>
+    <!-- Doc 1 -->
+    <rect x="80" y="84" width="260" height="68" rx="6" fill="#fff" stroke="#42a5f5" stroke-width="1.5"/>
+    <text x="90" y="100" font-size="10" fill="#888">📄 Document 1</text>
+    <text x="90" y="116" font-size="10" font-family="monospace" fill="#333">_id: ObjectId("65f...")</text>
+    <text x="90" y="130" font-size="10" font-family="monospace" fill="#333">src_ip: "10.0.0.5"</text>
+    <text x="90" y="144" font-size="10" font-family="monospace" fill="#333">action: "login", user: "alice"</text>
+    <!-- Doc 2 -->
+    <rect x="360" y="84" width="260" height="68" rx="6" fill="#fff" stroke="#42a5f5" stroke-width="1.5"/>
+    <text x="370" y="100" font-size="10" fill="#888">📄 Document 2</text>
+    <text x="370" y="116" font-size="10" font-family="monospace" fill="#333">_id: ObjectId("65g...")</text>
+    <text x="370" y="130" font-size="10" font-family="monospace" fill="#333">src_ip: "192.168.1.1"</text>
+    <text x="370" y="144" font-size="10" font-family="monospace" fill="#333">action: "scan", port: 22</text>
+    <!-- Collection 2 -->
+    <rect x="50" y="176" width="600" height="55" rx="10" fill="#fce4ec" stroke="#c62828" stroke-width="2"/>
+    <text x="70" y="198" font-size="13" font-weight="bold" fill="#b71c1c">📁 Collection : alerts</text>
+    <rect x="80" y="206" width="260" height="18" rx="4" fill="#fff" stroke="#ef9a9a"/>
+    <text x="90" y="220" font-size="10" font-family="monospace" fill="#333">{ _id: ..., type: "brute_force", ... }</text>
+    <!-- Collection 3 -->
+    <rect x="50" y="244" width="600" height="45" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+    <text x="70" y="266" font-size="13" font-weight="bold" fill="#1b5e20">📁 Collection : users</text>
+    <text x="80" y="282" font-size="10" font-family="monospace" fill="#333">{ _id: ..., username: "admin", role: "analyst" }</text>
+  </svg>
+  <div class="figure-caption">Figure 3 — Hiérarchie MongoDB : Base de données → Collections → Documents</div>
+  <div class="figure-explain">
+    <p>Cette figure montre les trois niveaux de MongoDB. La base <code>noseclab</code> est le conteneur principal. Elle contient plusieurs collections thématiques. La collection <code>security_logs</code> contient nos documents de logs — chacun avec sa propre structure. Notez que les deux documents illustrés n'ont pas exactement les mêmes champs : le document 2 a un champ <code>port</code> que le document 1 n'a pas, et inversement pour le champ <code>user</code>. C'est la puissance du schéma flexible. Chaque document est identifié de manière unique par son <code>_id</code> (ObjectId).</p>
+  </div>
+</div>
+
+<div class="retenir">
+  <h4>À retenir</h4>
+  <ul>
+    <li><strong>Base de données</strong> → conteneur logique (ex : <code>noseclab</code>).</li>
+    <li><strong>Collection</strong> → groupe de documents similaires (ex : <code>security_logs</code>), équivalent souple d'une table SQL.</li>
+    <li><strong>Document</strong> → objet JSON individuel = un enregistrement (ex : un log).</li>
+    <li><code>_id</code> → identifiant unique auto-généré (ObjectId) ou défini manuellement. Immuable.</li>
+    <li><strong>BSON</strong> → format binaire de JSON utilisé en interne par MongoDB (plus rapide, supporte plus de types).</li>
+  </ul>
+</div>
+
+<div class="erreur-freq">
+  <h4>Erreur fréquente : « Pas de schéma = pas de règles = je mets n'importe quoi »</h4>
+  <p><strong>Pourquoi c'est dangereux :</strong> L'absence de schéma imposé ne signifie pas qu'il ne faut pas de <em>convention</em>. Si chaque développeur utilise un nom de champ différent (<code>srcIp</code>, <code>src_ip</code>, <code>source_ip</code>, <code>ip_source</code>), les requêtes de détection d'incident deviennent un cauchemar. En sécurité, un log mal nommé peut <strong>passer entre les mailles</strong> d'une règle de détection et laisser une attaque non détectée. Bonne pratique : définir une <strong>convention de nommage</strong> documentée, même si MongoDB ne l'impose pas techniquement.</p>
+</div>
+
+<div class="micro-q">
+  <strong>🧠 Micro-question :</strong> Dans MongoDB, quel est l'équivalent d'une « ligne » dans une table SQL ? Et quel est l'équivalent d'une « table » ?
+</div>
+
+<!-- Mini-TP 2 -->
+<div class="card">
+  <h3><span class="badge badge-tp">MINI-TP 2</span> Manipuler des documents JSON</h3>
+  <p><strong>Objectif :</strong> Écrire et lire des documents JSON représentant des logs de sécurité.</p>
+  <p><strong>Durée estimée :</strong> 15 minutes</p>
+  <p><strong>Prérequis :</strong> Comprendre la syntaxe JSON (clé/valeur, accolades, guillemets).</p>
+
+  <h4>Étape 1 — Sur papier (5 min)</h4>
+  <p>Rédigez sur papier (ou dans un éditeur de texte) un document JSON représentant le log suivant :</p>
+  <ul>
+    <li>Un utilisateur nommé <code>mmartin</code> s'est connecté depuis l'IP <code>172.16.0.42</code> le 25 février 2026 à 10h30.</li>
+    <li>L'action est <code>login_success</code>, le statut est <code>success</code>.</li>
+    <li>L'appareil utilisé est un <code>smartphone</code>.</li>
+    <li>La géolocalisation indique : pays <code>FR</code>, ville <code>Lyon</code>.</li>
+    <li>La sévérité est <code>info</code>.</li>
+  </ul>
+
+  <h4>Étape 2 — Vérifiez votre JSON (5 min)</h4>
+  <p>Comparez votre JSON avec la solution ci-dessous. Vérifiez : guillemets autour des clés ? Virgules entre les paires ? Pas de virgule après le dernier champ ? Objet imbriqué pour <code>geo</code> ?</p>
+  <div class="result-box">
+<pre><code>{
+  "timestamp": "2026-02-25T10:30:00Z",
+  "src_ip": "172.16.0.42",
+  "user": "mmartin",
+  "action": "login_success",
+  "status": "success",
+  "device": "smartphone",
+  "geo": {
+    "country": "FR",
+    "city": "Lyon"
+  },
+  "severity": "info"
+}</code></pre>
+  </div>
+
+  <h4>Étape 3 — Exercice complémentaire (5 min)</h4>
+  <p>Écrivez un second document JSON pour ce scénario : un scan de port a été détecté depuis l'IP <code>10.99.0.1</code>, aucun utilisateur identifié, action <code>port_scan</code>, statut <code>detected</code>, sévérité <code>high</code>. Pas d'information de device ni de géolocalisation. Notez que ce document a <strong>moins de champs</strong> que le précédent — et c'est normal en NoSQL !</p>
+
+  <div class="autocheck">
+    <h4>✅ Auto-check</h4>
+    <ol>
+      <li>Votre document a-t-il des guillemets doubles (pas simples) autour de toutes les clés ? <em>→ obligatoire en JSON</em></li>
+      <li>Le champ <code>geo</code> est-il un objet imbriqué (avec ses propres <code>{ }</code>) ? <em>→ oui</em></li>
+      <li>Le second document peut-il ne pas avoir de champ <code>device</code> ? <em>→ oui, c'est la flexibilité NoSQL</em></li>
+    </ol>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--          CHECKPOINT 1                                         -->
+<!-- ============================================================ -->
+<h1 id="checkpoint1">⏱ Checkpoint 1 (≈ 1h10)</h1>
+<div class="card" style="border-left: 5px solid var(--warning);">
+  <h3><span class="badge badge-check">CHECKPOINT</span> Vérification des acquis — Blocs 1 &amp; 2</h3>
+  <p>Répondez mentalement ou sur papier. Correction immédiate avec l'enseignant.</p>
+  <ol>
+    <li>Citez 3 différences entre SQL et NoSQL Document.</li>
+    <li>Dans MongoDB, comment s'appelle un « enregistrement » ? Et un « groupe d'enregistrements » ?</li>
+    <li>Que contient le champ <code>_id</code> si vous ne le fournissez pas ?</li>
+    <li>Pourquoi les logs de sécurité sont-ils un bon cas d'usage pour NoSQL Document ?</li>
+    <li>Vrai ou Faux : en MongoDB, deux documents d'une même collection peuvent avoir des champs différents.</li>
+  </ol>
+  <details>
+    <summary><strong>Voir les réponses</strong></summary>
+    <ol>
+      <li>Schéma rigide vs flexible ; tables vs collections/documents ; SQL vs API/méthodes ; jointures vs imbrication ; scalabilité verticale vs horizontale (3 parmi celles-ci).</li>
+      <li>Document ; Collection.</li>
+      <li>Un <code>ObjectId</code> généré automatiquement (24 caractères hexadécimaux).</li>
+      <li>Car les logs proviennent de sources variées avec des formats différents → le schéma flexible évite les NULL et permet l'hétérogénéité.</li>
+      <li>Vrai.</li>
+    </ol>
+  </details>
+</div>
+
+<!-- ============================================================ -->
+<!--          BLOC 3 — Architecture du Lab                        -->
+<!-- ============================================================ -->
+<h1 id="bloc3">Bloc 3 — Architecture du Lab (Docker + MongoDB)</h1>
+<p><span class="badge badge-cours">MICRO-COURS</span> Durée : 15 min</p>
+
+<h3>3.1 Pourquoi Docker ?</h3>
+<p><strong>Docker</strong> est un outil qui permet de lancer des applications dans des <strong>conteneurs</strong> — des environnements isolés et reproductibles. Imaginez un conteneur comme une « boîte » qui contient tout ce dont une application a besoin pour fonctionner : le logiciel, ses dépendances, sa configuration. L'avantage majeur : que vous soyez sur Windows, Linux ou macOS, le conteneur se comporte de manière identique. Plus de « ça marche sur ma machine mais pas sur la tienne ».</p>
+
+<p>Pour notre lab, nous allons lancer MongoDB dans un conteneur Docker. Cela nous évite d'installer MongoDB directement sur votre machine (ce qui peut être complexe et varie selon le système d'exploitation). En une seule commande, vous aurez un serveur MongoDB opérationnel. Et quand le TP est terminé, vous pouvez supprimer le conteneur sans laisser de traces sur votre système.</p>
+
+<p>L'architecture est simple : votre terminal (ligne de commande) communique avec le <strong>client</strong> <code>mongosh</code> (MongoDB Shell), qui lui-même se connecte au <strong>serveur</strong> MongoDB tournant dans un conteneur Docker. Le serveur écoute par défaut sur le <strong>port 27017</strong>. C'est exactement comme une architecture client-serveur classique, sauf que le serveur est dans un conteneur.</p>
+
+<div class="alert alert-warning">
+  <div class="alert-title">🔧 Vérification Docker — À lire AVANT le TP</div>
+  <p>Ouvrez un terminal et tapez :</p>
+  <pre><code>docker --version</code></pre>
+  <p><strong>Résultat attendu :</strong> <code>Docker version 24.x.x</code> (ou supérieur).</p>
+  <p><strong>Si Docker n'est pas installé :</strong></p>
+  <ul>
+    <li><strong>Windows :</strong> Installez <a href="#">Docker Desktop</a> (nécessite WSL2 activé).</li>
+    <li><strong>macOS :</strong> Installez Docker Desktop via le .dmg officiel.</li>
+    <li><strong>Linux :</strong> <code>sudo apt install docker.io</code> (Debian/Ubuntu) ou <code>sudo dnf install docker</code> (Fedora).</li>
+    <li><strong>Alternative sans Docker :</strong> Utilisez <a href="#">MongoDB Atlas</a> (version cloud gratuite) — l'enseignant fournira les instructions si nécessaire.</li>
+  </ul>
+  <p>Vérifiez aussi que Docker tourne : <code>docker ps</code> (doit afficher un tableau, même vide).</p>
+</div>
+
+<!-- Figure 2 : Architecture du TP -->
+<div class="figure-box">
+  <svg viewBox="0 0 750 250" xmlns="http://www.w3.org/2000/svg" style="max-width:720px;">
+    <!-- Student PC -->
+    <rect x="20" y="70" width="150" height="110" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+    <text x="95" y="100" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d47a1">💻 PC Étudiant</text>
+    <text x="95" y="122" text-anchor="middle" font-size="11" fill="#333">Terminal</text>
+    <text x="95" y="140" text-anchor="middle" font-size="11" fill="#333">(bash / PowerShell</text>
+    <text x="95" y="155" text-anchor="middle" font-size="11" fill="#333">/ zsh)</text>
+    <!-- Arrow 1 -->
+    <line x1="170" y1="125" x2="240" y2="125" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+    <defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#333"/></marker></defs>
+    <text x="205" y="115" text-anchor="middle" font-size="10" fill="#666">commandes</text>
+    <!-- Docker -->
+    <rect x="245" y="30" width="280" height="190" rx="12" fill="#fff3e0" stroke="#e65100" stroke-width="2.5" stroke-dasharray="8,4"/>
+    <text x="385" y="55" text-anchor="middle" font-size="14" font-weight="bold" fill="#e65100">🐳 Docker Engine</text>
+    <!-- MongoDB container -->
+    <rect x="275" y="70" width="220" height="130" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+    <text x="385" y="95" text-anchor="middle" font-size="12" font-weight="bold" fill="#1b5e20">Conteneur MongoDB</text>
+    <text x="385" y="115" text-anchor="middle" font-size="11" fill="#333">mongod (serveur)</text>
+    <text x="385" y="133" text-anchor="middle" font-size="11" fill="#333">Port interne : 27017</text>
+    <rect x="310" y="145" width="150" height="40" rx="6" fill="#fff" stroke="#66bb6a"/>
+    <text x="385" y="163" text-anchor="middle" font-size="10" fill="#555">📦 Données (volume)</text>
+    <text x="385" y="178" text-anchor="middle" font-size="10" fill="#555">/data/db</text>
+    <!-- Arrow 2 -->
+    <line x1="525" y1="125" x2="590" y2="125" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+    <text x="557" y="115" text-anchor="middle" font-size="10" fill="#666">TCP :27017</text>
+    <!-- mongosh -->
+    <rect x="595" y="75" width="130" height="100" rx="10" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="2"/>
+    <text x="660" y="105" text-anchor="middle" font-size="12" font-weight="bold" fill="#6a1b9a">mongosh</text>
+    <text x="660" y="125" text-anchor="middle" font-size="11" fill="#333">Client Shell</text>
+    <text x="660" y="145" text-anchor="middle" font-size="11" fill="#333">interactif</text>
+    <!-- Port mapping -->
+    <text x="385" y="238" text-anchor="middle" font-size="11" fill="#c62828" font-weight="bold">⚠ Port mapping : -p 27017:27017 (host:container)</text>
+  </svg>
+  <div class="figure-caption">Figure 2 — Architecture du TP : PC → Docker → MongoDB → mongosh</div>
+  <div class="figure-explain">
+    <p>Votre terminal envoie des commandes à Docker, qui fait tourner un conteneur contenant le serveur MongoDB (<code>mongod</code>). Le serveur écoute sur le port 27017 à l'intérieur du conteneur. Grâce au <em>port mapping</em> (<code>-p 27017:27017</code>), ce port est accessible depuis votre machine hôte. Le client <code>mongosh</code> se connecte à <code>localhost:27017</code> pour interagir avec la base. Les données sont stockées dans un <em>volume</em> Docker (<code>/data/db</code>), ce qui permet de les conserver même si le conteneur est redémarré. En cybersécurité, notez que ce port mapping est une <strong>surface d'attaque</strong> : si votre machine est sur un réseau, le port 27017 peut être accessible de l'extérieur.</p>
+  </div>
+</div>
+
+<div class="retenir">
+  <h4>À retenir</h4>
+  <ul>
+    <li><strong>Docker</strong> = conteneur isolé, reproductible, multiplateforme.</li>
+    <li><strong>mongod</strong> = processus serveur MongoDB (celui qui stocke et gère les données).</li>
+    <li><strong>mongosh</strong> = client shell interactif pour envoyer des commandes à MongoDB.</li>
+    <li><strong>Port 27017</strong> = port par défaut de MongoDB. À protéger absolument en production.</li>
+    <li>Le <strong>port mapping</strong> Docker rend un service interne accessible depuis l'extérieur → impact sécurité direct.</li>
+  </ul>
+</div>
+
+<div class="erreur-freq">
+  <h4>Erreur fréquente : « Le conteneur tourne = la base est sécurisée »</h4>
+  <p><strong>Pourquoi c'est dangereux :</strong> Docker isole les processus mais n'ajoute <strong>aucune sécurité applicative</strong>. Par défaut, MongoDB dans Docker démarre <strong>sans authentification</strong>. Quiconque peut se connecter au port 27017 a un accès total aux données — lecture, écriture, suppression. C'est exactement ce qui s'est passé en 2017 lors des <em>MongoDB Ransomware attacks</em>, où des milliers de bases exposées sans auth ont été vidées et rançonnées.</p>
+</div>
+
+<div class="micro-q">
+  <strong>🧠 Micro-question :</strong> Sur quel port par défaut écoute MongoDB ? Et pourquoi le flag <code>-p 27017:27017</code> dans Docker peut-il poser un problème de sécurité ?
+</div>
+
+<!-- Mini-TP 3 -->
+<div class="card">
+  <h3><span class="badge badge-tp">MINI-TP 3</span> Démarrage Docker &amp; MongoDB</h3>
+  <p><strong>Objectif :</strong> Lancer un conteneur MongoDB et vérifier qu'il fonctionne.</p>
+  <p><strong>Durée estimée :</strong> 20 minutes</p>
+  <p><strong>Prérequis :</strong> Docker installé et fonctionnel (<code>docker ps</code> ne renvoie pas d'erreur).</p>
+
+  <h4>Étape 1 — Lancer le conteneur MongoDB</h4>
+  <p>Ouvrez votre terminal et exécutez la commande suivante :</p>
+  <pre><code>docker run -d \
+  --name mongo-noseclab \
+  -p 27017:27017 \
+  -v mongo-data:/data/db \
+  mongo:7</code></pre>
+
+  <p><strong>Explication des options :</strong></p>
+  <ul>
+    <li><code>-d</code> : mode détaché (le conteneur tourne en arrière-plan).</li>
+    <li><code>--name mongo-noseclab</code> : nom du conteneur (pour le retrouver facilement).</li>
+    <li><code>-p 27017:27017</code> : lie le port 27017 de votre machine au port 27017 du conteneur.</li>
+    <li><code>-v mongo-data:/data/db</code> : crée un volume Docker pour persister les données.</li>
+    <li><code>mongo:7</code> : image officielle MongoDB version 7.</li>
+  </ul>
+
+  <div class="alert alert-info">
+    <div class="alert-title">💡 Windows (PowerShell)</div>
+    <p>Remplacez les <code>\</code> par des <code>`</code> (backtick) pour les sauts de ligne, ou mettez tout sur une seule ligne :</p>
+    <pre><code>docker run -d --name mongo-noseclab -p 27017:27017 -v mongo-data:/data/db mongo:7</code></pre>
+  </div>
+
+  <h4>Étape 2 — Vérifier que le conteneur tourne</h4>
+  <pre><code>docker ps</code></pre>
+  <div class="result-box">
+    <strong>Résultat attendu :</strong>
+<pre><code>CONTAINER ID   IMAGE    COMMAND                  STATUS          PORTS                      NAMES
+a1b2c3d4e5f6   mongo:7  "docker-entrypoint.s…"   Up 30 seconds   0.0.0.0:27017->27017/tcp   mongo-noseclab</code></pre>
+    <p>Le <code>STATUS</code> doit indiquer <code>Up</code>. Si vous voyez <code>Exited</code>, consultez le dépannage ci-dessous.</p>
+  </div>
+
+  <h4>Étape 3 — Vérifier les logs du conteneur</h4>
+  <pre><code>docker logs mongo-noseclab | tail -5</code></pre>
+  <div class="result-box">
+    <strong>Résultat attendu (dernières lignes) :</strong>
+<pre><code>{"t":{"$date":"..."},"s":"I","c":"NETWORK","id":23016,"msg":"Waiting for connections","attr":{"port":27017,"ssl":"off"}}</code></pre>
+    <p>Le message <code>"Waiting for connections"</code> confirme que MongoDB est prêt.</p>
+  </div>
+
+  <h4>Étape 4 — Lancer mongosh</h4>
+  <pre><code>docker exec -it mongo-noseclab mongosh</code></pre>
+  <div class="result-box">
+    <strong>Résultat attendu :</strong>
+<pre><code>Current Mongosh Log ID: 65f...
+Connecting to:          mongodb://127.0.0.1:27017/...
+Using MongoDB:          7.x.x
+Using Mongosh:          2.x.x
+
+test></code></pre>
+    <p>Vous êtes maintenant connecté ! Le prompt <code>test&gt;</code> indique que vous êtes sur la base par défaut appelée <code>test</code>.</p>
+  </div>
+
+  <h4>Étape 5 — Test rapide</h4>
+  <p>Tapez cette commande dans mongosh pour vérifier que tout fonctionne :</p>
+  <pre><code>db.runCommand({ ping: 1 })</code></pre>
+  <div class="result-box">
+    <strong>Résultat attendu :</strong> <code>{ ok: 1 }</code>
+  </div>
+  <p>Tapez <code>exit</code> pour quitter mongosh (vous y reviendrez au TP suivant).</p>
+
+  <div class="autocheck">
+    <h4>✅ Auto-check</h4>
+    <ol>
+      <li><code>docker ps</code> montre-t-il le conteneur <code>mongo-noseclab</code> avec le statut <code>Up</code> ? <em>→ oui requis</em></li>
+      <li>Les logs contiennent-ils <code>"Waiting for connections"</code> ? <em>→ oui requis</em></li>
+      <li><code>mongosh</code> affiche-t-il le prompt <code>test&gt;</code> ? <em>→ oui requis</em></li>
+    </ol>
+  </div>
+
+  <div class="depannage">
+    <h4>🔧 Si ça ne marche pas</h4>
+    <table>
+      <tr><th>Problème</th><th>Cause probable</th><th>Solution</th></tr>
+      <tr><td><code>port is already allocated</code></td><td>Le port 27017 est déjà utilisé</td><td>Changez le mapping : <code>-p 27018:27017</code> et connectez-vous avec <code>mongosh --port 27018</code></td></tr>
+      <tr><td><code>Cannot connect to Docker daemon</code></td><td>Docker n'est pas démarré</td><td>Lancez Docker Desktop (Windows/Mac) ou <code>sudo systemctl start docker</code> (Linux)</td></tr>
+      <tr><td><code>image not found</code></td><td>Pas de connexion Internet</td><td>Vérifiez votre connexion ; l'image doit être téléchargée la première fois (~700 Mo)</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--          BLOC 4 — Connexion, base, collection, dataset       -->
+<!-- ============================================================ -->
+<h1 id="bloc4">Bloc 4 — Connexion mongosh, base, collection &amp; dataset security_logs</h1>
+<p><span class="badge badge-cours">MICRO-COURS</span> Durée : 15 min</p>
+
+<h3>4.1 Naviguer dans MongoDB avec mongosh</h3>
+<p>Une fois connecté à <code>mongosh</code>, vous interagissez avec MongoDB via des commandes JavaScript. Voici les commandes de navigation essentielles : <code>show dbs</code> affiche toutes les bases de données existantes, <code>use nomDeLaBase</code> bascule vers une base (ou la crée si elle n'existe pas encore — mais elle ne sera réellement créée que lorsqu'on y insérera des données), et <code>show collections</code> liste les collections de la base courante.</p>
+
+<p>MongoDB suit une philosophie <strong>« lazy creation »</strong> (création paresseuse) : les bases et les collections ne sont physiquement créées qu'au moment de la première insertion de données. Cela signifie que <code>use noseclab</code> ne crée pas immédiatement la base — elle « existera » seulement après votre premier <code>insertOne()</code> ou <code>insertMany()</code>. C'est un comportement important à comprendre car il peut être surprenant pour les habitués du SQL (où il faut explicitement faire <code>CREATE DATABASE</code> puis <code>CREATE TABLE</code>).</p>
+
+<p>Le <strong>dataset fil conducteur</strong> de ce module est une collection <code>security_logs</code>. Chaque document représente un événement de sécurité avec les champs suivants : <code>timestamp</code> (horodatage ISO 8601), <code>src_ip</code> (adresse IP source), <code>user</code> (identifiant utilisateur, peut être absent), <code>action</code> (type d'événement : login, logout, scan, etc.), <code>status</code> (success, failure, detected), <code>device</code> (appareil utilisé), <code>geo</code> (objet imbriqué : country, city), <code>severity</code> (info, warning, high, critical). Ce jeu de données simule un mini-SIEM que vous pourriez rencontrer en stage ou en entreprise.</p>
+
+<div class="retenir">
+  <h4>À retenir</h4>
+  <ul>
+    <li><code>show dbs</code> → lister les bases. <code>use &lt;nom&gt;</code> → basculer vers une base.</li>
+    <li><code>show collections</code> → lister les collections de la base courante.</li>
+    <li><code>db</code> → affiche le nom de la base courante.</li>
+    <li>La base et la collection sont créées lors de la <strong>première insertion</strong>, pas avant.</li>
+  </ul>
+</div>
+
+<div class="erreur-freq">
+  <h4>Erreur fréquente : « J'ai fait <code>use mabase</code> mais elle n'apparaît pas dans <code>show dbs</code> »</h4>
+  <p><strong>Pourquoi :</strong> La base n'existe physiquement qu'après la première insertion. C'est la <em>lazy creation</em>. Insérez au moins un document, puis refaites <code>show dbs</code>.</p>
+</div>
+
+<div class="micro-q">
+  <strong>🧠 Micro-question :</strong> Vous tapez <code>use incident_db</code> puis <code>show dbs</code>. La base <code>incident_db</code> apparaît-elle dans la liste ? Pourquoi ?
+</div>
+
+<!-- Mini-TP 4 -->
+<div class="card">
+  <h3><span class="badge badge-tp">MINI-TP 4</span> Création de la base &amp; insertion du dataset security_logs</h3>
+  <p><strong>Objectif :</strong> Créer la base <code>noseclab</code>, la collection <code>security_logs</code>, et insérer un jeu de données réaliste.</p>
+  <p><strong>Durée estimée :</strong> 20 minutes</p>
+  <p><strong>Prérequis :</strong> Conteneur MongoDB en cours d'exécution (Mini-TP 3 réussi).</p>
+
+  <h4>Étape 1 — Se connecter à mongosh</h4>
+  <pre><code>docker exec -it mongo-noseclab mongosh</code></pre>
+
+  <h4>Étape 2 — Créer et utiliser la base</h4>
+  <pre><code>use noseclab</code></pre>
+  <div class="result-box"><code>switched to db noseclab</code></div>
+
+  <h4>Étape 3 — Insérer le dataset security_logs</h4>
+  <p>Copiez-collez le bloc suivant dans mongosh. Il insère 12 documents représentant des logs de sécurité variés :</p>
+  <pre><code>db.security_logs.insertMany([
+  {
+    timestamp: ISODate("2026-02-25T08:01:00Z"),
+    src_ip: "192.168.1.10",
+    user: "alice",
+    action: "login",
+    status: "success",
+    device: "laptop",
+    geo: { country: "FR", city: "Paris" },
+    severity: "info"
+  },
+  {
+    timestamp: ISODate("2026-02-25T08:05:23Z"),
+    src_ip: "192.168.1.10",
+    user: "alice",
+    action: "file_access",
+    status: "success",
+    device: "laptop",
+    geo: { country: "FR", city: "Paris" },
+    severity: "info"
+  },
+  {
+    timestamp: ISODate("2026-02-25T08:12:45Z"),
+    src_ip: "10.0.0.50",
+    user: "bob",
+    action: "login",
+    status: "failure",
+    device: "desktop",
+    geo: { country: "FR", city: "Lyon" },
+    severity: "warning"
+  },
+  {
+    timestamp: ISODate("2026-02-25T08:13:10Z"),
+    src_ip: "10.0.0.50",
+    user: "bob",
+    action: "login",
+    status: "failure",
+    device: "desktop",
+    geo: { country: "FR", city: "Lyon" },
+    severity: "warning"
+  },
+  {
+    timestamp: ISODate("2026-02-25T08:13:42Z"),
+    src_ip: "10.0.0.50",
+    user: "bob",
+    action: "login",
+    status: "failure",
+    device: "desktop",
+    geo: { country: "FR", city: "Lyon" },
+    severity: "high"
+  },
+  {
+    timestamp: ISODate("2026-02-25T08:15:00Z"),
+    src_ip: "10.0.0.50",
+    user: "bob",
+    action: "login",
+    status: "success",
+    device: "desktop",
+    geo: { country: "FR", city: "Lyon" },
+    severity: "info"
+  },
+  {
+    timestamp: ISODate("2026-02-25T09:00:00Z"),
+    src_ip: "172.16.0.99",
+    action: "port_scan",
+    status: "detected",
+    severity: "critical"
+  },
+  {
+    timestamp: ISODate("2026-02-25T09:30:00Z"),
+    src_ip: "192.168.1.10",
+    user: "alice",
+    action: "logout",
+    status: "success",
+    device: "laptop",
+    geo: { country: "FR", city: "Paris" },
+    severity: "info"
+  },
+  {
+    timestamp: ISODate("2026-02-25T10:00:00Z"),
+    src_ip: "203.0.113.42",
+    action: "login",
+    status: "failure",
+    geo: { country: "CN", city: "Beijing" },
+    severity: "high"
+  },
+  {
+    timestamp: ISODate("2026-02-25T10:01:00Z"),
+    src_ip: "203.0.113.42",
+    action: "login",
+    status: "failure",
+    geo: { country: "CN", city: "Beijing" },
+    severity: "high"
+  },
+  {
+    timestamp: ISODate("2026-02-25T10:30:00Z"),
+    src_ip: "192.168.1.25",
+    user: "charlie",
+    action: "privilege_escalation",
+    status: "failure",
+    device: "server-web01",
+    geo: { country: "FR", city: "Marseille" },
+    severity: "critical"
+  },
+  {
+    timestamp: ISODate("2026-02-25T11:00:00Z"),
+    src_ip: "192.168.1.25",
+    user: "charlie",
+    action: "login",
+    status: "success",
+    device: "server-web01",
+    geo: { country: "FR", city: "Marseille" },
+    severity: "info"
+  }
+])</code></pre>
+
+  <div class="result-box">
+    <strong>Résultat attendu :</strong>
+<pre><code>{
+  acknowledged: true,
+  insertedIds: {
+    '0': ObjectId('...'),
+    '1': ObjectId('...'),
+    ...
+    '11': ObjectId('...')
+  }
+}</code></pre>
+    <p><code>acknowledged: true</code> et 12 IDs = succès !</p>
+  </div>
+
+  <h4>Étape 4 — Vérifications</h4>
+  <pre><code>// La base existe-t-elle maintenant ?
+show dbs
+
+// Les collections ?
+show collections
+
+// Combien de documents ?
+db.security_logs.countDocuments()
+
+// Aperçu d'un document
+db.security_logs.findOne()</code></pre>
+
+  <div class="result-box">
+    <p><code>show dbs</code> doit lister <code>noseclab</code>.</p>
+    <p><code>show collections</code> doit afficher <code>security_logs</code>.</p>
+    <p><code>countDocuments()</code> doit retourner <code>12</code>.</p>
+    <p><code>findOne()</code> doit afficher le premier document avec tous ses champs.</p>
+  </div>
+
+  <div class="autocheck">
+    <h4>✅ Auto-check</h4>
+    <ol>
+      <li><code>db.security_logs.countDocuments()</code> retourne-t-il bien <code>12</code> ?</li>
+      <li>Le document retourné par <code>findOne()</code> possède-t-il un champ <code>_id</code> auto-généré ?</li>
+      <li>Remarquez-vous que le document 7 (port_scan) n'a pas de champ <code>user</code> ni <code>device</code> ? Est-ce normal ?</li>
+    </ol>
+    <p><strong>Réponses :</strong> 1→ Oui. 2→ Oui, ObjectId auto-généré. 3→ Oui, c'est la flexibilité du schéma NoSQL.</p>
+  </div>
+
+  <div class="depannage">
+    <h4>🔧 Si ça ne marche pas</h4>
+    <table>
+      <tr><th>Problème</th><th>Cause probable</th><th>Solution</th></tr>
+      <tr><td><code>SyntaxError</code></td><td>Erreur de copier-coller (guillemet manquant, virgule en trop)</td><td>Vérifiez que vous avez copié l'intégralité du bloc, y compris les crochets <code>[ ]</code> et la parenthèse finale <code>)</code>.</td></tr>
+      <tr><td><code>not primary</code></td><td>Problème de replica set</td><td>Notre setup simple n'utilise pas de replica set. Si cette erreur apparaît, relancez le conteneur : <code>docker restart mongo-noseclab</code>.</td></tr>
+      <tr><td><code>countDocuments()</code> retourne moins de 12</td><td>Insertion partielle</td><td>Supprimez et recommencez : <code>db.security_logs.drop()</code> puis ré-insérez.</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--          CHECKPOINT 2                                         -->
+<!-- ============================================================ -->
+<h1 id="checkpoint2">⏱ Checkpoint 2 (≈ 2h40)</h1>
+<div class="card" style="border-left: 5px solid var(--warning);">
+  <h3><span class="badge badge-check">CHECKPOINT</span> Vérification des acquis — Blocs 3 &amp; 4</h3>
+  <ol>
+    <li>Quelle commande Docker lance un conteneur MongoDB nommé <code>mongo-noseclab</code> sur le port 27017 ?</li>
+    <li>Comment se connecter au shell MongoDB depuis Docker ?</li>
+    <li>Quelle commande affiche le nombre de documents dans <code>security_logs</code> ?</li>
+    <li>Pourquoi le document du <code>port_scan</code> n'a-t-il pas de champ <code>user</code> ?</li>
+    <li>Que signifie <code>acknowledged: true</code> après un <code>insertMany</code> ?</li>
+  </ol>
+  <details>
+    <summary><strong>Voir les réponses</strong></summary>
+    <ol>
+      <li><code>docker run -d --name mongo-noseclab -p 27017:27017 -v mongo-data:/data/db mongo:7</code></li>
+      <li><code>docker exec -it mongo-noseclab mongosh</code></li>
+      <li><code>db.security_logs.countDocuments()</code></li>
+      <li>Parce que MongoDB a un schéma flexible : chaque document peut avoir des champs différents. Un scan réseau n'a pas d'utilisateur associé.</li>
+      <li>Que MongoDB a bien reçu et enregistré l'opération d'écriture avec succès.</li>
+    </ol>
+  </details>
+</div>
+
+<!-- ============================================================ -->
+<!--          BLOC 5 — CRUD complet                               -->
+<!-- ============================================================ -->
+<h1 id="bloc5">Bloc 5 — CRUD : Create, Read, Update, Delete</h1>
+<p><span class="badge badge-cours">MICRO-COURS</span> Durée : 15 min</p>
+
+<h3>5.1 Les quatre opérations fondamentales</h3>
+<p>Toute base de données, qu'elle soit SQL ou NoSQL, repose sur quatre opérations fondamentales regroupées sous l'acronyme <strong>CRUD</strong> : <strong>C</strong>reate (créer/insérer), <strong>R</strong>ead (lire/interroger), <strong>U</strong>pdate (mettre à jour/modifier), <strong>D</strong>elete (supprimer). Dans MongoDB, chacune de ces opérations a une méthode dédiée qui s'appelle sur l'objet collection via <code>db.nomCollection.methode()</code>.</p>
+
+<p><strong>Create</strong> — Pour insérer des données, on utilise <code>insertOne()</code> pour un seul document ou <code>insertMany()</code> pour plusieurs documents à la fois (comme on l'a fait au TP 4). Chaque document inséré reçoit automatiquement un <code>_id</code> unique si vous n'en fournissez pas. En cybersécurité, l'insertion correspond à l'arrivée d'un nouveau log dans le système : chaque événement détecté est « inséré » dans la base.</p>
+
+<p><strong>Read</strong> — Pour lire des données, on utilise <code>find()</code> (plusieurs documents) ou <code>findOne()</code> (un seul). On peut passer un <strong>filtre</strong> en paramètre : <code>find({ status: "failure" })</code> retourne tous les documents où le statut est « failure ». Sans filtre, <code>find()</code> retourne tous les documents. C'est l'équivalent de <code>SELECT * FROM table WHERE ...</code> en SQL. En sécurité, c'est l'opération la plus fréquente : rechercher des événements suspects, filtrer les tentatives échouées, tracer l'activité d'un utilisateur.</p>
+
+<p><strong>Update</strong> — Pour modifier des documents existants, on utilise <code>updateOne()</code> (le premier qui correspond au filtre) ou <code>updateMany()</code> (tous ceux qui correspondent). La syntaxe utilise des <strong>opérateurs</strong> comme <code>$set</code> (modifier un champ), <code>$unset</code> (supprimer un champ), <code>$inc</code> (incrémenter). Exemple : <code>updateOne({ user: "bob" }, { $set: { severity: "critical" } })</code>. En sécurité, on met à jour la sévérité d'un incident, on ajoute des notes d'investigation, on change le statut d'une alerte.</p>
+
+<p><strong>Delete</strong> — Pour supprimer, on utilise <code>deleteOne()</code> ou <code>deleteMany()</code>. <strong>Attention</strong> : la suppression est irréversible ! <code>deleteMany({})</code> sans filtre supprime <strong>tous</strong> les documents de la collection. En cybersécurité, la suppression de logs est un sujet sensible : un attaquant qui obtient un accès à la base pourrait effacer les traces de son intrusion. C'est pourquoi la protection en écriture/suppression est cruciale.</p>
+
+<!-- Figure 4 : Flux CRUD -->
+<div class="figure-box">
+  <svg viewBox="0 0 750 300" xmlns="http://www.w3.org/2000/svg" style="max-width:720px;">
+    <!-- Client -->
+    <rect x="20" y="110" width="120" height="80" rx="10" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="2"/>
+    <text x="80" y="145" text-anchor="middle" font-size="13" font-weight="bold" fill="#6a1b9a">mongosh</text>
+    <text x="80" y="165" text-anchor="middle" font-size="11" fill="#333">(client)</text>
+
+    <!-- CREATE -->
+    <rect x="220" y="10" width="200" height="55" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+    <text x="320" y="32" text-anchor="middle" font-size="12" font-weight="bold" fill="#1b5e20">C — Create</text>
+    <text x="320" y="50" text-anchor="middle" font-size="10" font-family="monospace" fill="#333">insertOne() / insertMany()</text>
+    <line x1="140" y1="135" x2="220" y2="37" stroke="#2e7d32" stroke-width="1.8" marker-end="url(#arrowhead)"/>
+
+    <!-- READ -->
+    <rect x="220" y="80" width="200" height="55" rx="8" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+    <text x="320" y="102" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d47a1">R — Read</text>
+    <text x="320" y="120" text-anchor="middle" font-size="10" font-family="monospace" fill="#333">find() / findOne()</text>
+    <line x1="140" y1="145" x2="220" y2="107" stroke="#1565c0" stroke-width="1.8" marker-end="url(#arrowhead)"/>
+
+    <!-- UPDATE -->
+    <rect x="220" y="150" width="200" height="55" rx="8" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+    <text x="320" y="172" text-anchor="middle" font-size="12" font-weight="bold" fill="#e65100">U — Update</text>
+    <text x="320" y="190" text-anchor="middle" font-size="10" font-family="monospace" fill="#333">updateOne() / updateMany()</text>
+    <line x1="140" y1="155" x2="220" y2="177" stroke="#e65100" stroke-width="1.8" marker-end="url(#arrowhead)"/>
+
+    <!-- DELETE -->
+    <rect x="220" y="220" width="200" height="55" rx="8" fill="#ffebee" stroke="#c62828" stroke-width="2"/>
+    <text x="320" y="242" text-anchor="middle" font-size="12" font-weight="bold" fill="#c62828">D — Delete</text>
+    <text x="320" y="260" text-anchor="middle" font-size="10" font-family="monospace" fill="#333">deleteOne() / deleteMany()</text>
+    <line x1="140" y1="165" x2="220" y2="247" stroke="#c62828" stroke-width="1.8" marker-end="url(#arrowhead)"/>
+
+    <!-- MongoDB -->
+    <rect x="500" y="80" width="220" height="140" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2.5"/>
+    <text x="610" y="115" text-anchor="middle" font-size="14" font-weight="bold" fill="#1b5e20">MongoDB</text>
+    <text x="610" y="138" text-anchor="middle" font-size="11" fill="#333">Collection :</text>
+    <text x="610" y="156" text-anchor="middle" font-size="12" font-weight="bold" font-family="monospace" fill="#0d47a1">security_logs</text>
+    <rect x="530" y="168" width="160" height="36" rx="5" fill="#fff" stroke="#a5d6a7"/>
+    <text x="610" y="185" text-anchor="middle" font-size="10" fill="#555">📄 doc1  📄 doc2  📄 doc3</text>
+    <text x="610" y="198" text-anchor="middle" font-size="10" fill="#555">📄 doc4  📄 ...  📄 doc12</text>
+
+    <!-- Arrows to MongoDB -->
+    <line x1="420" y1="37" x2="500" y2="120" stroke="#888" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+    <line x1="420" y1="107" x2="500" y2="140" stroke="#888" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+    <line x1="420" y1="177" x2="500" y2="160" stroke="#888" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+    <line x1="420" y1="247" x2="500" y2="180" stroke="#888" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+  </svg>
+  <div class="figure-caption">Figure 4 — Les quatre opérations CRUD vers MongoDB</div>
+  <div class="figure-explain">
+    <p>Le client <code>mongosh</code> envoie des opérations CRUD au serveur MongoDB. Chaque opération agit sur une collection spécifique. <strong>Create</strong> ajoute de nouveaux documents, <strong>Read</strong> les interroge (avec ou sans filtre), <strong>Update</strong> modifie des documents existants en utilisant des opérateurs (<code>$set</code>, <code>$inc</code>...), et <strong>Delete</strong> les supprime. En cybersécurité, l'accès en écriture (<code>Update</code>, <code>Delete</code>) est le plus sensible : un attaquant pourrait modifier des logs pour masquer une intrusion ou supprimer les preuves d'une activité malveillante. C'est pourquoi le contrôle d'accès granulaire est essentiel.</p>
+  </div>
+</div>
+
+<div class="retenir">
+  <h4>À retenir</h4>
+  <ul>
+    <li><strong>Create :</strong> <code>insertOne(doc)</code> / <code>insertMany([doc1, doc2, ...])</code></li>
+    <li><strong>Read :</strong> <code>find(filtre)</code> / <code>findOne(filtre)</code></li>
+    <li><strong>Update :</strong> <code>updateOne(filtre, { $set: { champ: valeur } })</code> / <code>updateMany(...)</code></li>
+    <li><strong>Delete :</strong> <code>deleteOne(filtre)</code> / <code>deleteMany(filtre)</code></li>
+    <li><code>deleteMany({})</code> = supprime TOUT. <strong>Ne jamais exécuter sans réfléchir !</strong></li>
+  </ul>
+</div>
+
+<div class="erreur-freq">
+  <h4>Erreur fréquente : Oublier <code>$set</code> dans un update</h4>
+  <p>Écrire <code>updateOne({ user: "alice" }, { severity: "critical" })</code> <strong>sans <code>$set</code></strong> ne met pas à jour le champ — cela <strong>remplace tout le document</strong> par <code>{ severity: "critical" }</code> ! Tous les autres champs sont perdus.</p>
+  <p><strong>Pourquoi c'est dangereux :</strong> En sécurité, un remplacement accidentel de document signifie la <strong>perte de preuves</strong> (logs d'incident). Toujours utiliser <code>$set</code> pour modifier un champ spécifique.</p>
+</div>
+
+<div class="micro-q">
+  <strong>🧠 Micro-question :</strong> Quelle est la différence entre <code>updateOne({ user: "bob" }, { status: "blocked" })</code> et <code>updateOne({ user: "bob" }, { $set: { status: "blocked" } })</code> ?
+</div>
+
+<!-- Mini-TP 5 -->
+<div class="card">
+  <h3><span class="badge badge-tp">MINI-TP 5</span> Exercices CRUD guidés</h3>
+  <p><strong>Objectif :</strong> Maîtriser les 4 opérations CRUD sur la collection <code>security_logs</code>.</p>
+  <p><strong>Durée estimée :</strong> 25 minutes</p>
+  <p><strong>Prérequis :</strong> Être connecté à <code>mongosh</code> sur la base <code>noseclab</code> avec 12 documents dans <code>security_logs</code>.</p>
+
+  <h4>Exercice A — Create : Ajouter un nouveau log</h4>
+  <p>Un nouvel événement vient de se produire : l'utilisateur <code>eve</code> a tenté un accès depuis l'IP <code>198.51.100.7</code>, action <code>login</code>, statut <code>failure</code>, depuis un <code>smartphone</code>, géolocalisation <code>US/New York</code>, sévérité <code>warning</code>.</p>
+  <pre><code>db.security_logs.insertOne({
+  timestamp: ISODate("2026-02-25T11:45:00Z"),
+  src_ip: "198.51.100.7",
+  user: "eve",
+  action: "login",
+  status: "failure",
+  device: "smartphone",
+  geo: { country: "US", city: "New York" },
+  severity: "warning"
+})</code></pre>
+  <div class="result-box">
+    <strong>Résultat attendu :</strong> <code>{ acknowledged: true, insertedId: ObjectId('...') }</code>
+    <p>Vérifiez : <code>db.security_logs.countDocuments()</code> → doit retourner <strong>13</strong>.</p>
+  </div>
+
+  <h4>Exercice B — Read : Lire et filtrer</h4>
+  <p><strong>B1.</strong> Affichez tous les logs avec un statut <code>failure</code> :</p>
+  <pre><code>db.security_logs.find({ status: "failure" })</code></pre>
+
+  <p><strong>B2.</strong> Trouvez tous les logs de l'utilisateur <code>bob</code> :</p>
+  <pre><code>db.security_logs.find({ user: "bob" })</code></pre>
+
+  <p><strong>B3.</strong> Trouvez les logs de sévérité <code>critical</code> :</p>
+  <pre><code>db.security_logs.find({ severity: "critical" })</code></pre>
+
+  <p><strong>B4.</strong> Trouvez les logs provenant de Chine (<code>geo.country</code> = <code>"CN"</code>). Notez la notation pointée pour accéder aux champs imbriqués :</p>
+  <pre><code>db.security_logs.find({ "geo.country": "CN" })</code></pre>
+
+  <div class="result-box">
+    <p><strong>B1 :</strong> Doit retourner ~6 documents (3 de bob + port_scan statut detected... vérifiez : les login failure de bob + les tentatives de 203.0.113.42 + eve + charlie).</p>
+    <p><strong>B2 :</strong> 4 documents (3 failures + 1 success).</p>
+    <p><strong>B3 :</strong> 2 documents (port_scan + privilege_escalation).</p>
+    <p><strong>B4 :</strong> 2 documents (les tentatives depuis Beijing).</p>
+  </div>
+
+  <h4>Exercice C — Update : Modifier des documents</h4>
+  <p><strong>C1.</strong> L'analyse a montré que le <code>port_scan</code> depuis <code>172.16.0.99</code> est en fait un faux positif. Ajoutez un champ <code>investigated: true</code> et changez la sévérité à <code>"info"</code> :</p>
+  <pre><code>db.security_logs.updateOne(
+  { src_ip: "172.16.0.99", action: "port_scan" },
+  { $set: { investigated: true, severity: "info" } }
+)</code></pre>
+  <div class="result-box">
+    <code>{ acknowledged: true, matchedCount: 1, modifiedCount: 1 }</code>
+    <p>Vérifiez : <code>db.security_logs.findOne({ src_ip: "172.16.0.99" })</code> — le champ <code>investigated</code> doit apparaître.</p>
+  </div>
+
+  <p><strong>C2.</strong> Augmentez la sévérité de TOUS les <code>login failure</code> à <code>"high"</code> (politique de sécurité renforcée) :</p>
+  <pre><code>db.security_logs.updateMany(
+  { action: "login", status: "failure" },
+  { $set: { severity: "high" } }
+)</code></pre>
+  <div class="result-box">
+    <code>{ acknowledged: true, matchedCount: X, modifiedCount: X }</code>
+    <p><code>matchedCount</code> doit correspondre au nombre de login failures dans la collection.</p>
+  </div>
+
+  <h4>Exercice D — Delete : Supprimer un document</h4>
+  <p>Le log d'<code>eve</code> était un test, supprimez-le :</p>
+  <pre><code>db.security_logs.deleteOne({ user: "eve", src_ip: "198.51.100.7" })</code></pre>
+  <div class="result-box">
+    <code>{ acknowledged: true, deletedCount: 1 }</code>
+    <p>Vérifiez : <code>db.security_logs.countDocuments()</code> → retour à <strong>12</strong>.</p>
+  </div>
+
+  <div class="alert alert-danger">
+    <div class="alert-title">⚠️ Danger — Ne jamais exécuter en production :</div>
+    <pre><code>db.security_logs.deleteMany({})    // Supprime TOUS les documents !
+db.security_logs.drop()            // Supprime la collection entière !</code></pre>
+    <p>En contexte SOC, cela reviendrait à <strong>effacer toutes les preuves d'intrusion</strong>.</p>
+  </div>
+
+  <div class="autocheck">
+    <h4>✅ Auto-check</h4>
+    <ol>
+      <li>Après toutes les opérations, <code>countDocuments()</code> retourne-t-il <strong>12</strong> ?</li>
+      <li>Le document <code>port_scan</code> a-t-il maintenant un champ <code>investigated: true</code> ?</li>
+      <li>Tous les <code>login failure</code> ont-ils la sévérité <code>"high"</code> ? Vérifiez avec <code>db.security_logs.find({ action: "login", status: "failure" }, { severity: 1 })</code></li>
+    </ol>
+  </div>
+
+  <div class="depannage">
+    <h4>🔧 Si ça ne marche pas</h4>
+    <table>
+      <tr><th>Problème</th><th>Solution</th></tr>
+      <tr><td><code>matchedCount: 0</code></td><td>Le filtre ne correspond à aucun document. Vérifiez l'orthographe exacte des valeurs (majuscules/minuscules comptent !).</td></tr>
+      <tr><td>Document remplacé au lieu d'être mis à jour</td><td>Vous avez oublié <code>$set</code>. Réinsérez le document original et recommencez.</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--          BLOC 6 — Requêtes avancées                          -->
+<!-- ============================================================ -->
+<h1 id="bloc6">Bloc 6 — Requêtes utiles : filtres, tri, limite, projection</h1>
+<p><span class="badge badge-cours">MICRO-COURS</span> Durée : 10 min</p>
+
+<h3>6.1 Opérateurs de comparaison</h3>
+<p>MongoDB fournit des opérateurs puissants pour construire des filtres précis. Les plus courants sont : <code>$eq</code> (égal, implicite), <code>$ne</code> (différent de), <code>$gt</code> (supérieur à), <code>$gte</code> (supérieur ou égal), <code>$lt</code> (inférieur à), <code>$lte</code> (inférieur ou égal), <code>$in</code> (dans une liste de valeurs), <code>$nin</code> (pas dans la liste). On les utilise dans le filtre : <code>find({ severity: { $in: ["high", "critical"] } })</code>.</p>
+
+<h3>6.2 Opérateurs logiques</h3>
+<p>Pour combiner des conditions : <code>$and</code> (toutes les conditions vraies — implicite quand on met plusieurs champs), <code>$or</code> (au moins une condition vraie), <code>$not</code> (négation). Exemple : <code>find({ $or: [{ severity: "critical" }, { action: "port_scan" }] })</code>.</p>
+
+<h3>6.3 Tri, limite et projection</h3>
+<p><strong>Tri</strong> (<code>sort</code>) : <code>.sort({ timestamp: -1 })</code> trie par ordre décroissant (les plus récents d'abord). <code>1</code> = croissant, <code>-1</code> = décroissant.</p>
+<p><strong>Limite</strong> (<code>limit</code>) : <code>.limit(5)</code> ne retourne que les 5 premiers résultats. Très utile pour voir les derniers événements.</p>
+<p><strong>Projection</strong> : Le second argument de <code>find()</code> permet de choisir quels champs afficher. <code>find({}, { src_ip: 1, action: 1, _id: 0 })</code> n'affiche que <code>src_ip</code> et <code>action</code>, en masquant le <code>_id</code>. <code>1</code> = inclure, <code>0</code> = exclure. On ne peut pas mélanger inclusion et exclusion (sauf pour <code>_id</code>).</p>
+
+<p><strong>Chaînage</strong> : On peut chaîner ces méthodes : <code>db.security_logs.find({ status: "failure" }).sort({ timestamp: -1 }).limit(3)</code> → les 3 derniers échecs, les plus récents en premier.</p>
+
+<div class="retenir">
+  <h4>À retenir</h4>
+  <ul>
+    <li>Opérateurs de comparaison : <code>$gt</code>, <code>$lt</code>, <code>$gte</code>, <code>$lte</code>, <code>$in</code>, <code>$ne</code>.</li>
+    <li>Opérateurs logiques : <code>$and</code> (implicite), <code>$or</code>, <code>$not</code>.</li>
+    <li><code>.sort({ champ: -1 })</code> → tri décroissant. <code>.limit(n)</code> → limiter les résultats.</li>
+    <li>Projection : 2ème argument de <code>find()</code>. <code>1</code> = inclure, <code>0</code> = exclure.</li>
+  </ul>
+</div>
+
+<div class="erreur-freq">
+  <h4>Erreur fréquente : Oublier la projection et exposer des données sensibles</h4>
+  <p><strong>Pourquoi c'est dangereux :</strong> Dans une API qui interroge MongoDB, si le développeur fait <code>find({})</code> sans projection, <strong>tous les champs</strong> sont renvoyés au client — y compris des données sensibles (IP internes, noms d'utilisateurs, tokens). Toujours utiliser la projection pour limiter les champs exposés dans une réponse API. C'est le principe du <strong>moindre privilège appliqué aux données</strong>.</p>
+</div>
+
+<div class="micro-q">
+  <strong>🧠 Micro-question :</strong> Écrivez mentalement la requête pour : « les 5 derniers logs de sévérité high ou critical, triés du plus récent au plus ancien, en n'affichant que le timestamp, src_ip et action ».
+</div>
+
+<!-- Mini-TP 6 -->
+<div class="card">
+  <h3><span class="badge badge-tp">MINI-TP 6</span> Scénarios de requêtes cybersécurité</h3>
+  <p><strong>Objectif :</strong> Utiliser les requêtes MongoDB pour répondre à des questions d'investigation sécurité.</p>
+  <p><strong>Durée estimée :</strong> 20 minutes</p>
+  <p><strong>Prérequis :</strong> 12 documents dans <code>security_logs</code>, micro-cours Bloc 6 terminé.</p>
+
+  <h4>Scénario 1 — Détection de brute-force</h4>
+  <p>L'analyste SOC suspecte une attaque par brute-force sur le compte <code>bob</code>. Trouvez toutes les tentatives de login échouées de bob :</p>
+  <pre><code>db.security_logs.find({
+  user: "bob",
+  action: "login",
+  status: "failure"
+})</code></pre>
+  <div class="result-box">
+    <strong>Résultat attendu :</strong> 3 documents, tous depuis <code>10.0.0.50</code>, dans un intervalle de ~1 minute.
+    <p><strong>Analyse :</strong> 3 échecs rapprochés depuis la même IP → fortement suspect. Typique d'une attaque brute-force.</p>
+  </div>
+
+  <h4>Scénario 2 — Activité depuis l'étranger</h4>
+  <p>Trouvez tous les logs provenant d'un pays autre que la France :</p>
+  <pre><code>db.security_logs.find({
+  "geo.country": { $ne: "FR" }
+})</code></pre>
+  <div class="result-box">
+    <strong>Résultat attendu :</strong> Les 2 tentatives depuis la Chine (CN) + le document port_scan (pas de champ geo → ne matche pas le filtre, vérifions). En fait, le document sans champ <code>geo</code> sera retourné car <code>geo.country</code> n'existe pas, donc il est différent de "FR". C'est un piège intéressant !
+  </div>
+
+  <h4>Scénario 3 — Les 3 derniers événements critiques</h4>
+  <pre><code>db.security_logs.find(
+  { severity: { $in: ["high", "critical"] } },
+  { timestamp: 1, src_ip: 1, action: 1, severity: 1, _id: 0 }
+).sort({ timestamp: -1 }).limit(3)</code></pre>
+  <div class="result-box">
+    <strong>Résultat attendu :</strong> 3 documents avec uniquement les champs demandés, triés du plus récent au plus ancien.
+  </div>
+
+  <h4>Scénario 4 — Combien d'événements par type d'action ? (bonus)</h4>
+  <p>Cet exercice introduit <code>aggregate</code>, qui sera approfondi en Séance 2 :</p>
+  <pre><code>db.security_logs.aggregate([
+  { $group: { _id: "$action", count: { $sum: 1 } } },
+  { $sort: { count: -1 } }
+])</code></pre>
+  <div class="result-box">
+    <strong>Résultat attendu :</strong> Liste des actions avec leur nombre d'occurrences (login devrait être le plus fréquent).
+  </div>
+
+  <h4>Scénario 5 — Exercice libre</h4>
+  <p>Écrivez vous-même la requête pour répondre à cette question d'investigation : <em>« Quels appareils (device) ont été utilisés pour des connexions réussies (action: login, status: success) ? Affichez uniquement user, device et timestamp, triés par timestamp croissant. »</em></p>
+
+  <details>
+    <summary><strong>Voir la solution</strong></summary>
+    <pre><code>db.security_logs.find(
+  { action: "login", status: "success" },
+  { user: 1, device: 1, timestamp: 1, _id: 0 }
+).sort({ timestamp: 1 })</code></pre>
+  </details>
+
+  <div class="autocheck">
+    <h4>✅ Auto-check</h4>
+    <ol>
+      <li>Le scénario 1 retourne-t-il exactement 3 documents pour bob ?</li>
+      <li>Le scénario 3 retourne-t-il bien des documents avec uniquement 4 champs (sans <code>_id</code>) ?</li>
+      <li>Avez-vous remarqué que le scénario 2 retourne aussi les documents sans champ <code>geo</code> ? Pourquoi ?</li>
+    </ol>
+    <p><strong>Réponse Q3 :</strong> Parce que <code>$ne: "FR"</code> retourne aussi les documents où le champ n'existe pas (il est <code>undefined</code>, qui est différent de <code>"FR"</code>). Pour exclure ces cas, il faudrait ajouter <code>"geo.country": { $exists: true, $ne: "FR" }</code>.</p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--          CHECKPOINT 3                                         -->
+<!-- ============================================================ -->
+<h1 id="checkpoint3">⏱ Checkpoint 3 (≈ 4h10)</h1>
+<div class="card" style="border-left: 5px solid var(--warning);">
+  <h3><span class="badge badge-check">CHECKPOINT</span> Vérification des acquis — Blocs 5 &amp; 6</h3>
+  <ol>
+    <li>Quelle méthode insère plusieurs documents en une seule opération ?</li>
+    <li>Quelle est la différence entre <code>find()</code> et <code>findOne()</code> ?</li>
+    <li>Pourquoi faut-il toujours utiliser <code>$set</code> dans un <code>updateOne()</code> ?</li>
+    <li>Écrivez la requête : « Tous les logs de sévérité high ou critical, les 5 plus récents, n'afficher que src_ip et action ».</li>
+    <li>Que fait <code>deleteMany({})</code> ? Pourquoi est-ce catastrophique en contexte SOC ?</li>
+  </ol>
+  <details>
+    <summary><strong>Voir les réponses</strong></summary>
+    <ol>
+      <li><code>insertMany([...])</code></li>
+      <li><code>find()</code> retourne un curseur avec tous les documents correspondants ; <code>findOne()</code> retourne un seul document (le premier trouvé).</li>
+      <li>Sans <code>$set</code>, le document est <strong>remplacé</strong> entièrement → perte de tous les autres champs.</li>
+      <li><code>db.security_logs.find({ severity: { $in: ["high","critical"] }}, { src_ip:1, action:1, _id:0 }).sort({ timestamp:-1 }).limit(5)</code></li>
+      <li>Supprime <strong>tous</strong> les documents de la collection. En SOC, cela efface toutes les preuves d'incidents.</li>
+    </ol>
+  </details>
+</div>
+
+<!-- ============================================================ -->
+<!--          BLOC 7 — Sécurité "by default"                      -->
+<!-- ============================================================ -->
+<h1 id="bloc7">Bloc 7 — Sécurité « by default » : surface d'attaque MongoDB</h1>
+<p><span class="badge badge-cours">MICRO-COURS</span> <span class="badge badge-secu">SÉCURITÉ</span> Durée : 15 min</p><h3>7.1 Le problème des configurations par défaut</h3>
+<p>Lorsqu'on installe un logiciel serveur — que ce soit une base de données, un serveur web ou un service réseau — la configuration par défaut est généralement conçue pour <strong>faciliter la prise en main</strong>, pas pour être sécurisée. Les éditeurs veulent que le produit « marche tout de suite » sans friction. C'est compréhensible d'un point de vue ergonomique, mais c'est une <strong>catastrophe du point de vue sécurité</strong>. MongoDB ne fait pas exception à cette règle.</p>
+
+<p>Historiquement (avant la version 3.6), MongoDB écoutait par défaut sur <strong>toutes les interfaces réseau</strong> (<code>0.0.0.0</code>), ce qui signifie que n'importe quelle machine sur le réseau — ou pire, sur Internet — pouvait tenter de se connecter. De plus, l'<strong>authentification était désactivée</strong> par défaut : aucun mot de passe n'était requis pour lire, écrire ou supprimer des données. Résultat : en 2017, plus de <strong>28 000 bases MongoDB</strong> exposées sur Internet ont été victimes d'attaques de type <em>ransomware</em>. Les attaquants se connectaient, supprimaient toutes les données, et laissaient un message demandant une rançon en Bitcoin.</p>
+
+<p>Depuis la version 3.6, MongoDB a amélioré les choses : par défaut, le serveur écoute uniquement sur <code>localhost</code> (<code>127.0.0.1</code>), ce qui empêche les connexions depuis d'autres machines. Cependant, quand on utilise <strong>Docker</strong> avec un <em>port mapping</em> (<code>-p 27017:27017</code>), on <strong>contourne cette protection</strong> : le port devient accessible depuis l'extérieur du conteneur, potentiellement depuis tout le réseau local, voire Internet si la machine est directement exposée. De plus, l'image Docker officielle de MongoDB démarre <strong>sans authentification activée</strong> pour simplifier le développement. C'est exactement notre configuration de TP !</p>
+
+<p>En tant que futurs professionnels de la cybersécurité, vous devez développer un réflexe : à chaque fois que vous déployez un service, posez-vous trois questions fondamentales. <strong>Qui peut se connecter ?</strong> (surface réseau : interfaces, ports, pare-feu). <strong>Qui est authentifié ?</strong> (identité : utilisateurs, mots de passe, certificats). <strong>Qui est autorisé à faire quoi ?</strong> (permissions : lecture seule, écriture, administration). Ce triptyque <em>réseau → authentification → autorisation</em> s'applique à MongoDB comme à n'importe quel autre service.</p>
+
+<h3>7.2 Les trois vecteurs d'exposition</h3>
+
+<table>
+  <thead>
+    <tr><th>Vecteur</th><th>Configuration dangereuse</th><th>Configuration sécurisée</th><th>Risque concret</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Port exposé</strong></td>
+      <td><code>-p 27017:27017</code> (accessible depuis toutes les interfaces)</td>
+      <td><code>-p 127.0.0.1:27017:27017</code> (limité à localhost)</td>
+      <td>N'importe qui sur le réseau peut se connecter à la base</td>
+    </tr>
+    <tr>
+      <td><strong>Bind address</strong></td>
+      <td><code>bindIp: 0.0.0.0</code> (toutes les interfaces)</td>
+      <td><code>bindIp: 127.0.0.1</code> (localhost uniquement)</td>
+      <td>Le serveur accepte les connexions depuis n'importe quelle IP</td>
+    </tr>
+    <tr>
+      <td><strong>Authentification</strong></td>
+      <td><code>--auth</code> non activé (défaut Docker)</td>
+      <td><code>--auth</code> activé avec utilisateurs créés</td>
+      <td>Aucun mot de passe requis : accès total anonyme (lecture, écriture, suppression, admin)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>7.3 Pourquoi notre lab est volontairement « non sécurisé »</h3>
+<p>Dans le cadre de ce TP, nous avons délibérément lancé MongoDB <strong>sans authentification</strong> et avec un port mapping ouvert. C'est un choix pédagogique : cela simplifie la prise en main et nous permet de nous concentrer sur l'apprentissage de MongoDB. Cependant, vous devez garder à l'esprit que cette configuration est <strong>strictement interdite en production</strong>. Le bloc suivant (Mini-TP 7) vous guidera pour <strong>vérifier</strong> concrètement cette exposition — sans attaquer, simplement en constatant les faits.</p>
+
+<div class="gold-rules">
+  <h3>🛡️ Règles d'or — Sécurité NoSQL (niveau débutant)</h3>
+  <ol>
+    <li><strong>Toujours activer l'authentification</strong> (<code>--auth</code>) : aucun accès anonyme ne doit être possible.</li>
+    <li><strong>Limiter l'interface d'écoute</strong> : <code>bindIp: 127.0.0.1</code> ou uniquement les interfaces nécessaires.</li>
+    <li><strong>Restreindre le port mapping Docker</strong> : utiliser <code>-p 127.0.0.1:27017:27017</code> au lieu de <code>-p 27017:27017</code>.</li>
+    <li><strong>Créer des utilisateurs avec le moindre privilège</strong> : un utilisateur « lecture seule » pour les analystes, un utilisateur « admin » uniquement pour l'administration.</li>
+    <li><strong>Ne jamais exposer MongoDB directement sur Internet</strong> : utiliser un VPN, un tunnel SSH ou un réseau privé.</li>
+    <li><strong>Chiffrer les communications</strong> : activer TLS/SSL pour les connexions client-serveur.</li>
+    <li><strong>Surveiller et auditer</strong> : activer les logs d'audit MongoDB pour tracer qui fait quoi.</li>
+  </ol>
+</div>
+
+<div class="retenir">
+  <h4>À retenir</h4>
+  <ul>
+    <li>La configuration <strong>par défaut</strong> de MongoDB (surtout via Docker) est <strong>non sécurisée</strong> : pas d'auth, port potentiellement exposé.</li>
+    <li>En 2017, 28 000+ bases MongoDB ont été rançonnées à cause de mauvaises configurations.</li>
+    <li>Le triptyque de sécurité : <strong>Réseau</strong> (qui peut se connecter ?) → <strong>Authentification</strong> (qui est-il ?) → <strong>Autorisation</strong> (que peut-il faire ?).</li>
+    <li>Docker <code>-p</code> contourne l'isolation réseau : le port mapping rend le service accessible.</li>
+  </ul>
+</div>
+
+<div class="erreur-freq">
+  <h4>Erreur fréquente : « C'est juste un lab / un serveur de dev, pas besoin de sécuriser »</h4>
+  <p><strong>Pourquoi c'est dangereux :</strong> Les serveurs « temporaires » ou « de développement » sont souvent oubliés et laissés en ligne pendant des mois. Ils deviennent des <strong>portes d'entrée idéales</strong> pour un attaquant : pas de surveillance, pas de patches, pas d'auth. C'est exactement comme laisser une porte de service non verrouillée dans un bâtiment « parce qu'elle ne sert plus ». Un scan réseau (Shodan, Censys) peut les trouver en quelques secondes. <strong>Sécurisez tout, même les labs.</strong></p>
+</div>
+
+<div class="micro-q">
+  <strong>🧠 Micro-question :</strong> Vous découvrez qu'un collègue a déployé MongoDB en production avec <code>docker run -p 27017:27017 mongo:7</code> sans aucune option d'authentification. Citez 3 risques concrets et 3 actions correctives immédiates.
+</div>
+
+<!-- Mini-TP 7 -->
+<div class="card">
+  <h3><span class="badge badge-tp">MINI-TP 7</span> <span class="badge badge-secu">SÉCURITÉ</span> Vérification de la surface d'attaque</h3>
+  <p><strong>Objectif :</strong> Constater (sans attaquer) que notre MongoDB est exposé, comprendre les risques.</p>
+  <p><strong>Durée estimée :</strong> 15 minutes</p>
+  <p><strong>Prérequis :</strong> Conteneur <code>mongo-noseclab</code> en fonctionnement.</p>
+
+  <h4>Étape 1 — Vérifier le port exposé</h4>
+  <p>Depuis votre terminal (en dehors de mongosh), vérifiez que le port 27017 est ouvert :</p>
+
+  <p><strong>Option A — Avec <code>nmap</code> (si installé) :</strong></p>
+  <pre><code>nmap -p 27017 localhost</code></pre>
+  <div class="result-box">
+    <strong>Résultat attendu :</strong>
+<pre><code>PORT      STATE SERVICE
+27017/tcp open  mongod</code></pre>
+    <p>Le port est ouvert ! Toute machine pouvant atteindre votre IP peut potentiellement s'y connecter.</p>
+  </div>
+
+  <p><strong>Option B — Sans <code>nmap</code>, avec <code>curl</code> :</strong></p>
+  <pre><code>curl -s http://localhost:27017</code></pre>
+  <div class="result-box">
+    <strong>Résultat attendu :</strong>
+    <code>It looks like you are trying to access MongoDB over HTTP on the native driver port.</code>
+    <p>Ce message confirme qu'un service MongoDB répond sur ce port. Un attaquant obtient cette même information.</p>
+  </div>
+
+  <p><strong>Option C — Avec PowerShell (Windows) :</strong></p>
+  <pre><code>Test-NetConnection -ComputerName localhost -Port 27017</code></pre>
+  <div class="result-box">
+    <strong>Résultat attendu :</strong> <code>TcpTestSucceeded : True</code>
+  </div>
+
+  <h4>Étape 2 — Vérifier l'absence d'authentification</h4>
+  <p>Connectez-vous à mongosh <strong>sans fournir aucun identifiant</strong> :</p>
+  <pre><code>docker exec -it mongo-noseclab mongosh --eval "db.adminCommand({ listDatabases: 1 })"</code></pre>
+  <div class="result-box">
+    <strong>Résultat attendu :</strong>
+<pre><code>{
+  databases: [
+    { name: 'admin', sizeOnDisk: ..., empty: false },
+    { name: 'config', sizeOnDisk: ..., empty: false },
+    { name: 'local', sizeOnDisk: ..., empty: false },
+    { name: 'noseclab', sizeOnDisk: ..., empty: false }
+  ],
+  totalSize: ...,
+  ok: 1
+}</code></pre>
+    <p>Vous avez listé <strong>toutes les bases</strong> sans aucun mot de passe. Un attaquant pourrait faire exactement la même chose. Il verrait votre base <code>noseclab</code>, s'y connecterait, et pourrait lire, modifier ou supprimer tous vos logs de sécurité.</p>
+  </div>
+
+  <h4>Étape 3 — Vérifier le binding réseau du conteneur</h4>
+  <pre><code>docker port mongo-noseclab</code></pre>
+  <div class="result-box">
+    <strong>Résultat attendu :</strong>
+    <code>27017/tcp -> 0.0.0.0:27017</code>
+    <p><code>0.0.0.0</code> signifie « toutes les interfaces réseau ». Le port est accessible depuis l'extérieur de la machine (réseau local). Si cette machine avait une IP publique, MongoDB serait accessible depuis Internet !</p>
+  </div>
+
+  <h4>Étape 4 — Comparer avec une configuration sécurisée</h4>
+  <p>Voici comment on <strong>devrait</strong> lancer MongoDB en production (ne l'exécutez pas, c'est pour comprendre la différence) :</p>
+  <pre><code># Configuration sécurisée (NE PAS exécuter maintenant)
+docker run -d \
+  --name mongo-secure \
+  -p 127.0.0.1:27017:27017 \
+  -e MONGO_INITDB_ROOT_USERNAME=admin \
+  -e MONGO_INITDB_ROOT_PASSWORD=MotDePasseF0rt!2026 \
+  mongo:7 --auth</code></pre>
+  <p><strong>Différences clés :</strong></p>
+  <ul>
+    <li><code>127.0.0.1:27017:27017</code> → port accessible <strong>uniquement depuis localhost</strong>.</li>
+    <li><code>MONGO_INITDB_ROOT_USERNAME/PASSWORD</code> → crée un utilisateur admin au démarrage.</li>
+    <li><code>--auth</code> → active l'authentification obligatoire.</li>
+  </ul>
+
+  <h4>Étape 5 — Remplir la checklist sécurité (livrable)</h4>
+  <p>Copiez et complétez cette checklist sur un document texte ou papier. C'est votre <strong>livrable de séance</strong> :</p>
+
+  <div class="card" style="background: #fffde7;">
+    <h4>📋 Checklist Sécurité MongoDB — Séance 1</h4>
+    <ul class="checklist">
+      <li>Le port 27017 est-il ouvert ? (commande utilisée : _______ / résultat : _______)</li>
+      <li>L'authentification est-elle activée ? (commande utilisée : _______ / résultat : oui / non)</li>
+      <li>Le binding est-il sur 0.0.0.0 ou 127.0.0.1 ? (commande utilisée : _______ / résultat : _______)</li>
+      <li>Peut-on lister les bases sans mot de passe ? (oui / non)</li>
+      <li>Peut-on lire les documents de <code>security_logs</code> sans mot de passe ? (oui / non)</li>
+      <li>Citez 3 risques concrets de cette configuration : 1)_______ 2)_______ 3)_______</li>
+      <li>Citez 3 mesures correctives : 1)_______ 2)_______ 3)_______</li>
+    </ul>
+  </div>
+
+  <div class="autocheck">
+    <h4>✅ Auto-check</h4>
+    <ol>
+      <li>Avez-vous pu lister les bases sans authentification ? <em>→ oui (c'est le problème !)</em></li>
+      <li>Le résultat de <code>docker port</code> montre-t-il <code>0.0.0.0:27017</code> ? <em>→ oui (exposition sur toutes les interfaces)</em></li>
+      <li>Avez-vous compris pourquoi <code>-p 127.0.0.1:27017:27017</code> est plus sécurisé que <code>-p 27017:27017</code> ? <em>→ il limite l'accès à la machine locale uniquement</em></li>
+    </ol>
+  </div>
+
+  <div class="depannage">
+    <h4>🔧 Si ça ne marche pas</h4>
+    <table>
+      <tr><th>Problème</th><th>Solution</th></tr>
+      <tr><td><code>nmap: command not found</code></td><td>Utilisez l'option B (<code>curl</code>) ou C (PowerShell). <code>nmap</code> est optionnel.</td></tr>
+      <tr><td><code>curl: command not found</code> (Windows)</td><td>Utilisez PowerShell : <code>Invoke-WebRequest http://localhost:27017</code> ou l'option C.</td></tr>
+      <tr><td>Le port apparaît fermé</td><td>Vérifiez que le conteneur tourne : <code>docker ps</code>. S'il est arrêté : <code>docker start mongo-noseclab</code>.</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--          CONCLUSION                                           -->
+<!-- ============================================================ -->
+<h1 id="conclusion">Conclusion — Résumé des acquis &amp; préparation Séance 2</h1>
+
+<h3>Ce que vous avez appris aujourd'hui</h3>
+<div class="card">
+  <table>
+    <thead>
+      <tr><th>Compétence</th><th>Ce que vous savez faire</th><th>Vérifié ?</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>SQL vs NoSQL</td><td>Expliquer les différences, choisir le bon outil selon le contexte</td><td>☐</td></tr>
+      <tr><td>Modèle Document</td><td>Décrire la hiérarchie base → collection → document → champ → _id</td><td>☐</td></tr>
+      <tr><td>Docker + MongoDB</td><td>Lancer un conteneur, se connecter avec mongosh</td><td>☐</td></tr>
+      <tr><td>CRUD</td><td>Insérer, lire (avec filtres), mettre à jour ($set), supprimer</td><td>☐</td></tr>
+      <tr><td>Requêtes avancées</td><td>Opérateurs ($in, $gt, $or...), sort, limit, projection</td><td>☐</td></tr>
+      <tr><td>Sécurité by default</td><td>Identifier port exposé, auth désactivée, bind address, et expliquer les risques</td><td>☐</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>Préparation Séance 2 — Modélisation &amp; Index</h3>
+<div class="alert alert-info">
+  <div class="alert-title">📅 Au programme de la Séance 2</div>
+  <ul>
+    <li><strong>Modélisation de données</strong> : documents imbriqués vs références, quand utiliser quoi.</li>
+    <li><strong>Index</strong> : accélérer les requêtes, comprendre <code>explain()</code>, index sur les champs fréquemment filtrés.</li>
+    <li><strong>Aggregation pipeline</strong> : <code>$match</code>, <code>$group</code>, <code>$sort</code>, <code>$project</code> — pour des analyses de sécurité plus poussées.</li>
+    <li><strong>Sécurité</strong> : création d'utilisateurs, rôles, activation de l'authentification.</li>
+  </ul>
+  <p><strong>Action à préparer :</strong> Conservez votre conteneur Docker en état de marche. Ne supprimez pas vos données. Relisez les 7 règles d'or de sécurité.</p>
+</div>
+
+<!-- ============================================================ -->
+<!--          DEVOIR MAISON                                        -->
+<!-- ============================================================ -->
+<h1 id="devoir">Devoir maison</h1>
+<div class="card">
+  <h3>📝 Devoir — Durée estimée : 30 à 45 minutes</h3>
+  <p><strong>Format de rendu :</strong> Un fichier texte ou PDF contenant vos réponses, commandes utilisées et captures d'écran (ou copier-coller des sorties mongosh). Nommez le fichier <code>DM1_NOM_Prenom.pdf</code>.</p>
+  <p><strong>Date de rendu :</strong> Avant la Séance 2.</p>
+
+  <h4>Partie A — Questions de cours (10 points)</h4>
+  <ol>
+    <li>(2 pts) Expliquez en 5 lignes maximum pourquoi MongoDB est particulièrement adapté au stockage de logs de sécurité provenant de sources hétérogènes.</li>
+    <li>(2 pts) Quelle est la différence entre <code>updateOne({ user: "alice" }, { role: "admin" })</code> et <code>updateOne({ user: "alice" }, { $set: { role: "admin" } })</code> ? Laquelle est dangereuse et pourquoi ?</li>
+    <li>(2 pts) Citez les 3 piliers du triptyque de sécurité pour un service de base de données (vus en cours). Donnez un exemple concret pour chaque pilier appliqué à MongoDB.</li>
+    <li>(2 pts) Qu'est-ce qu'un <code>ObjectId</code> ? Quelles informations encode-t-il ?</li>
+    <li>(2 pts) Pourquoi le flag Docker <code>-p 27017:27017</code> est-il plus dangereux que <code>-p 127.0.0.1:27017:27017</code> ?</li>
+  </ol>
+
+  <h4>Partie B — Pratique MongoDB (10 points)</h4>
+  <p>Sur votre lab (conteneur <code>mongo-noseclab</code>), réalisez les opérations suivantes et joignez les commandes + résultats :</p>
+  <ol>
+    <li>(2 pts) Insérez 3 nouveaux documents dans <code>security_logs</code> représentant :
+      <ul>
+        <li>Une tentative de connexion SSH échouée depuis l'IP <code>10.10.10.10</code>, sévérité <code>high</code>.</li>
+        <li>Une alerte malware sur la machine <code>server-db02</code>, utilisateur <code>admin</code>, sévérité <code>critical</code>.</li>
+        <li>Une déconnexion normale de l'utilisateur <code>alice</code>, sévérité <code>info</code>.</li>
+      </ul>
+    </li>
+    <li>(2 pts) Écrivez une requête qui retourne tous les événements de sévérité <code>high</code> ou <code>critical</code> survenus après 10h00 (UTC), triés du plus récent au plus ancien, avec uniquement les champs <code>timestamp</code>, <code>src_ip</code>, <code>action</code>, <code>severity</code>.</li>
+    <li>(2 pts) Mettez à jour tous les documents provenant de l'IP <code>10.0.0.50</code> pour ajouter un champ <code>investigated: true</code> et un champ <code>analyst: "votre_nom"</code>.</li>
+    <li>(2 pts) Supprimez le document de déconnexion d'<code>alice</code> que vous avez ajouté en B1. Vérifiez avec <code>countDocuments()</code>.</li>
+    <li>(2 pts) Exécutez la commande de vérification d'authentification vue en TP 7. Copiez le résultat. Rédigez un paragraphe de 3 à 5 lignes expliquant pourquoi ce résultat est problématique d'un point de vue sécurité et ce que vous feriez pour y remédier.</li>
+  </ol>
+
+  <h4>Barème résumé</h4>
+  <table>
+    <tr><th>Partie</th><th>Points</th><th>Critères</th></tr>
+    <tr><td>A — Cours</td><td>10</td><td>Exactitude, clarté, vocabulaire approprié</td></tr>
+    <tr><td>B — Pratique</td><td>10</td><td>Commandes correctes, résultats cohérents, analyse sécurité pertinente</td></tr>
+    <tr><td><strong>Total</strong></td><td><strong>20</strong></td><td></td></tr>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<!--          ANNEXES                                              -->
+<!-- ============================================================ -->
+<h1 id="annexes">Annexes</h1>
+
+<h2>A. Commandes utiles — Docker</h2>
+<div class="card">
+  <table>
+    <thead>
+      <tr><th>Action</th><th>Commande</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Lancer le conteneur MongoDB</td><td><code>docker run -d --name mongo-noseclab -p 27017:27017 -v mongo-data:/data/db mongo:7</code></td></tr>
+      <tr><td>Voir les conteneurs actifs</td><td><code>docker ps</code></td></tr>
+      <tr><td>Voir tous les conteneurs (y compris arrêtés)</td><td><code>docker ps -a</code></td></tr>
+      <tr><td>Arrêter le conteneur</td><td><code>docker stop mongo-noseclab</code></td></tr>
+      <tr><td>Redémarrer le conteneur</td><td><code>docker start mongo-noseclab</code></td></tr>
+      <tr><td>Voir les logs du conteneur</td><td><code>docker logs mongo-noseclab</code></td></tr>
+      <tr><td>Entrer dans le conteneur (bash)</td><td><code>docker exec -it mongo-noseclab bash</code></td></tr>
+      <tr><td>Lancer mongosh</td><td><code>docker exec -it mongo-noseclab mongosh</code></td></tr>
+      <tr><td>Supprimer le conteneur</td><td><code>docker rm -f mongo-noseclab</code></td></tr>
+      <tr><td>Voir les volumes Docker</td><td><code>docker volume ls</code></td></tr>
+      <tr><td>Voir le port mapping</td><td><code>docker port mongo-noseclab</code></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>B. Commandes utiles — mongosh</h2>
+<div class="card">
+  <table>
+    <thead>
+      <tr><th>Action</th><th>Commande mongosh</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Afficher la base courante</td><td><code>db</code></td></tr>
+      <tr><td>Lister les bases</td><td><code>show dbs</code></td></tr>
+      <tr><td>Changer de base</td><td><code>use noseclab</code></td></tr>
+      <tr><td>Lister les collections</td><td><code>show collections</code></td></tr>
+      <tr><td>Compter les documents</td><td><code>db.security_logs.countDocuments()</code></td></tr>
+      <tr><td>Compter avec filtre</td><td><code>db.security_logs.countDocuments({ status: "failure" })</code></td></tr>
+      <tr><td>Trouver un document</td><td><code>db.security_logs.findOne()</code></td></tr>
+      <tr><td>Trouver avec filtre</td><td><code>db.security_logs.find({ user: "alice" })</code></td></tr>
+      <tr><td>Trouver avec projection</td><td><code>db.security_logs.find({}, { src_ip: 1, action: 1, _id: 0 })</code></td></tr>
+      <tr><td>Trier les résultats</td><td><code>db.security_logs.find().sort({ timestamp: -1 })</code></td></tr>
+      <tr><td>Limiter les résultats</td><td><code>db.security_logs.find().limit(5)</code></td></tr>
+      <tr><td>Insérer un document</td><td><code>db.security_logs.insertOne({ ... })</code></td></tr>
+      <tr><td>Insérer plusieurs documents</td><td><code>db.security_logs.insertMany([ {...}, {...} ])</code></td></tr>
+      <tr><td>Mettre à jour un document</td><td><code>db.security_logs.updateOne({ filtre }, { $set: { champ: valeur } })</code></td></tr>
+      <tr><td>Mettre à jour plusieurs</td><td><code>db.security_logs.updateMany({ filtre }, { $set: { ... } })</code></td></tr>
+      <tr><td>Supprimer un document</td><td><code>db.security_logs.deleteOne({ filtre })</code></td></tr>
+      <tr><td>Supprimer une collection</td><td><code>db.security_logs.drop()</code></td></tr>
+      <tr><td>Tester la connexion</td><td><code>db.runCommand({ ping: 1 })</code></td></tr>
+      <tr><td>Infos serveur</td><td><code>db.serverStatus()</code></td></tr>
+      <tr><td>Quitter</td><td><code>exit</code></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>C. Dépannage — Erreurs fréquentes</h2>
+<div class="card">
+  <table>
+    <thead>
+      <tr><th>Erreur / Symptôme</th><th>Cause probable</th><th>Solution</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>MongoNetworkError: connect ECONNREFUSED</code></td>
+        <td>Le serveur MongoDB n'est pas démarré ou le port est incorrect.</td>
+        <td>Vérifiez avec <code>docker ps</code> que le conteneur tourne. Si arrêté : <code>docker start mongo-noseclab</code>.</td>
+      </tr>
+      <tr>
+        <td><code>address already in use :::27017</code></td>
+        <td>Un autre processus utilise déjà le port 27017.</td>
+        <td>Identifiez le processus : <code>lsof -i :27017</code> (Linux/Mac) ou <code>netstat -ano | findstr 27017</code> (Windows). Tuez-le ou changez le port Docker : <code>-p 27018:27017</code>.</td>
+      </tr>
+      <tr>
+        <td><code>SyntaxError: Unexpected token</code></td>
+        <td>Erreur de syntaxe JSON/JavaScript dans la commande mongosh.</td>
+        <td>Vérifiez : accolades/crochets appariés, virgules entre les éléments (pas après le dernier), guillemets doubles pour les clés dans le JSON pur (en mongosh, les guillemets sur les clés sont optionnels).</td>
+      </tr>
+      <tr>
+        <td><code>E11000 duplicate key error</code></td>
+        <td>Vous essayez d'insérer un document avec un <code>_id</code> qui existe déjà.</td>
+        <td>Laissez MongoDB générer l'<code>_id</code> automatiquement, ou utilisez un <code>_id</code> unique.</td>
+      </tr>
+      <tr>
+        <td><code>matchedCount: 0</code> sur un update</td>
+        <td>Le filtre ne correspond à aucun document.</td>
+        <td>Vérifiez la casse et l'orthographe exacte des valeurs. Testez d'abord avec <code>find()</code> le même filtre.</td>
+      </tr>
+      <tr>
+        <td>Les données ont disparu après redémarrage Docker</td>
+        <td>Le conteneur a été lancé sans volume (<code>-v</code>).</td>
+        <td>Relancez avec <code>-v mongo-data:/data/db</code> pour persister les données. Ré-insérez le dataset.</td>
+      </tr>
+      <tr>
+        <td><code>Cannot connect to the Docker daemon</code></td>
+        <td>Docker Desktop n'est pas lancé (Windows/Mac) ou le service Docker est arrêté (Linux).</td>
+        <td>Windows/Mac : lancez Docker Desktop. Linux : <code>sudo systemctl start docker</code>.</td>
+      </tr>
+      <tr>
+        <td>mongosh affiche un avertissement <code>Access control is not enabled</code></td>
+        <td>L'authentification n'est pas activée (normal pour notre lab).</td>
+        <td>Ce n'est pas une erreur bloquante, c'est un avertissement de sécurité. En production, activez <code>--auth</code>.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>D. Glossaire NoSQL</h2>
+<div class="card">
+  <table>
+    <thead>
+      <tr><th>Terme</th><th>Définition simple</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>NoSQL</strong></td><td>« Not Only SQL » — famille de bases de données non relationnelles, optimisées pour des cas d'usage spécifiques (volume, flexibilité, performance).</td></tr>
+      <tr><td><strong>Document</strong></td><td>Un enregistrement individuel dans MongoDB, stocké au format JSON/BSON. Équivalent d'une ligne en SQL, mais avec un schéma flexible.</td></tr>
+      <tr><td><strong>Collection</strong></td><td>Un groupe de documents dans MongoDB. Équivalent souple d'une table en SQL (pas de schéma imposé).</td></tr>
+      <tr><td><strong>Base de données (Database)</strong></td><td>Conteneur logique regroupant plusieurs collections liées à un même projet ou domaine.</td></tr>
+      <tr><td><strong>BSON</strong></td><td>Binary JSON — format binaire utilisé en interne par MongoDB pour stocker les documents. Plus rapide que JSON texte et supporte des types supplémentaires (Date, ObjectId, etc.).</td></tr>
+      <tr><td><strong>ObjectId</strong></td><td>Identifiant unique de 12 octets (24 caractères hexadécimaux) généré automatiquement par MongoDB pour chaque document. Encode un timestamp, un identifiant machine, un PID et un compteur.</td></tr>
+      <tr><td><strong>_id</strong></td><td>Champ obligatoire de chaque document MongoDB, servant de clé primaire. Immuable une fois créé.</td></tr>
+      <tr><td><strong>CRUD</strong></td><td>Create, Read, Update, Delete — les quatre opérations fondamentales sur les données.</td></tr>
+      <tr><td><strong>mongod</strong></td><td>Le processus serveur (daemon) de MongoDB. C'est lui qui gère le stockage, les requêtes et les connexions.</td></tr>
+      <tr><td><strong>mongosh</strong></td><td>MongoDB Shell — client interactif en ligne de commande pour envoyer des commandes à MongoDB.</td></tr>
+      <tr><td><strong>Schéma flexible</strong></td><td>Caractéristique des bases NoSQL document : chaque document d'une même collection peut avoir des champs différents, sans déclaration préalable.</td></tr>
+      <tr><td><strong>Projection</strong></td><td>Technique permettant de sélectionner quels champs d'un document sont retournés par une requête (<code>1</code> = inclure, <code>0</code> = exclure).</td></tr>
+      <tr><td><strong>Opérateur</strong></td><td>Mot-clé préfixé par <code>$</code> utilisé dans les requêtes MongoDB pour définir des conditions (<code>$gt</code>, <code>$set</code>, <code>$in</code>, etc.).</td></tr>
+      <tr><td><strong>Port mapping</strong></td><td>Fonctionnalité Docker (<code>-p</code>) qui rend un port interne au conteneur accessible depuis la machine h��te.</td></tr>
+      <tr><td><strong>Bind address</strong></td><td>L'adresse IP sur laquelle un serveur écoute les connexions. <code>127.0.0.1</code> = localhost uniquement. <code>0.0.0.0</code> = toutes les interfaces (dangereux).</td></tr>
+      <tr><td><strong>SIEM</strong></td><td>Security Information and Event Management — système centralisant la collecte, l'analyse et la corrélation des logs de sécurité.</td></tr>
+      <tr><td><strong>SOC</strong></td><td>Security Operations Center — centre opérationnel de surveillance et de réponse aux incidents de sécurité.</td></tr>
+      <tr><td><strong>Surface d'attaque</strong></td><td>Ensemble des points d'entrée qu'un attaquant pourrait exploiter pour compromettre un système (ports ouverts, services exposés, etc.).</td></tr>
+      <tr><td><strong>Brute-force</strong></td><td>Attaque consistant à tester un grand nombre de mots de passe ou combinaisons pour deviner des identifiants.</td></tr>
+      <tr><td><strong>Sharding</strong></td><td>Technique de scalabilité horizontale consistant à répartir les données sur plusieurs serveurs (sera vu en séances suivantes).</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<!--          FOOTER                                               -->
+<!-- ============================================================ -->
+<hr style="margin-top: 40px;">
+<div style="text-align: center; color: var(--muted); font-size: 0.88em; padding: 20px 0;">
+  <p><strong>Module NoSQL Security</strong> — Séance 1 : Découvrir NoSQL &amp; Prise en main de MongoDB</p>
+  <p>1<sup>ère</sup> année Cybersécurité — 2025-2026</p>
+  <p style="margin-top: 10px;">
+    <a href="#toc">⬆ Retour à la table des matières</a>
+  </p>
+</div>
+
+</body>
+</html>

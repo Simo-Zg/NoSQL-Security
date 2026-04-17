@@ -1,0 +1,375 @@
+
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=2.2cm]{geometry}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{fancyvrb}
+\usepackage{titlesec}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  urlcolor=blue!50!black
+}
+
+\definecolor{codebg}{RGB}{245,247,250}
+\definecolor{codeframe}{RGB}{210,215,223}
+\DefineVerbatimEnvironment{codeblock}{Verbatim}{
+  fontsize=\small,
+  frame=single,
+  framerule=0.4pt,
+  rulecolor=\color{codeframe},
+  framesep=3mm,
+  baselinestretch=1,
+  commandchars=\\\{\}
+}
+
+\titleformat{\section}{\large\bfseries}{\thesection.}{0.6em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.6em}{}
+
+\begin{document}
+
+\begin{titlepage}
+\centering
+\vspace*{2cm}
+{\Huge \textbf{Rapport de travaux pratiques}}\\[0.5cm]
+{\LARGE Module NoSQL Security}\\[0.4cm]
+{\Large Séance 1 --- Découvrir NoSQL et prise en main de MongoDB}\\[1.3cm]
+
+\begin{tabular}{>{\bfseries}p{4.2cm}p{9cm}}
+Objet & Synthèse du travail réalisé et réponses au devoir final \\
+Date de rédaction & \today
+\end{tabular}
+\end{titlepage}
+\tableofcontents
+\newpage
+
+
+\section{Objet du rapport}
+
+Ce rapport présente le travail effectivement réalisé dans le laboratoire MongoDB décrit dans le support de cours. Il reprend les étapes techniques observées dans le fichier \texttt{Mongodb-Commands.txt}, structure les résultats de manière professionnelle et répond à la dernière partie du support, à savoir le \emph{devoir maison} composé d'une partie théorique et d'une partie pratique.
+
+Le rapport s'appuie sur les commandes réellement exécutées et sur leurs sorties observées. Lorsqu'une action réalisée diffère légèrement de l'énoncé attendu, cette différence est explicitement signalée afin de conserver une traçabilité technique correcte.
+
+\section{Vue d'ensemble du travail réalisé}
+
+Le travail mené couvre quatre axes principaux :
+
+\begin{enumerate}[label=\arabic*)]
+  \item \textbf{Mise en place du lab MongoDB sous Docker} : téléchargement des images, lancement de conteneurs, diagnostic des erreurs de syntaxe et connexion à \texttt{mongosh}.
+  \item \textbf{Manipulation des données de sécurité} : insertion, lecture, mise à jour et suppression de documents dans la collection \texttt{security\_logs}.
+  \item \textbf{Requêtes d'investigation} : filtrage par sévérité, projection de champs, tri chronologique et vérification des modifications.
+  \item \textbf{Constat de la surface d'attaque} : validation de l'exposition du port 27017, absence d'authentification, et confirmation du bind réseau ouvert.
+\end{enumerate}
+
+\section{Déroulement technique des travaux}
+
+\subsection{Démarrage initial et premières erreurs}
+
+Le journal d'exécution montre une première tentative de démarrage avec l'image \texttt{mongodb/mongodb-community-server:latest}. Le conteneur a bien été lancé, mais deux difficultés sont apparues :
+
+\begin{itemize}
+  \item \texttt{mongosh} n'était pas disponible directement dans le terminal Windows hôte ;
+  \item des commandes MongoDB ont été saisies dans \texttt{cmd} au lieu d'être exécutées depuis \texttt{mongosh}, ce qui a provoqué des erreurs de type \texttt{not recognized as an internal or external command}.
+\end{itemize}
+
+Une seconde difficulté a concerné l'utilisation d'une syntaxe multi-ligne de style Linux avec des antislashs \texttt{\textbackslash} dans \texttt{cmd.exe}, ce qui a produit l'erreur \texttt{docker: invalid reference format}. La correction a consisté à reformuler la commande sur une seule ligne.
+
+\subsection{Lancement fonctionnel du conteneur de travail}
+
+La commande opérationnelle de déploiement a été la suivante :
+
+\begin{codeblock}
+docker run -d --name mongo-noseclab -p 27017:27017 -v mongo-data:/data/db mongo:7
+\end{codeblock}
+
+Cette exécution a permis :
+\begin{itemize}
+  \item de télécharger l'image \texttt{mongo:7} si elle n'était pas présente localement ;
+  \item d'exposer le port \texttt{27017/tcp} sur l'hôte ;
+  \item de monter un volume Docker persistant ;
+  \item de lancer le conteneur \texttt{mongo-noseclab}.
+\end{itemize}
+
+Le résultat observé dans \texttt{docker ps} confirme que le conteneur est actif et que le port est publié sur \texttt{0.0.0.0:27017} et \texttt{[::]:27017}. Cela établit déjà une première conclusion sécurité : le service n'est pas limité à \texttt{localhost}.
+
+\subsection{Connexion à MongoDB et constats de sécurité au démarrage}
+
+La connexion à MongoDB via \texttt{docker exec -it mongo-noseclab mongosh} a réussi. Les messages de démarrage mettent explicitement en évidence le warning suivant :
+
+\begin{quote}
+\texttt{Access control is not enabled for the database. Read and write access to data and configuration is unrestricted}
+\end{quote}
+
+Ce message est central : il prouve que l'instance a été démarrée sans authentification activée. Une simple commande de test, \texttt{db.runCommand(\{ping:1\})}, retourne \texttt{\{ ok: 1 \}}, ce qui confirme le bon fonctionnement du serveur.
+
+\subsection{Jeu de données et opérations CRUD}
+
+Le journal montre l'insertion du dataset initial \texttt{security\_logs}, puis plusieurs opérations de manipulation :
+
+\begin{itemize}
+  \item insertion d'un document supplémentaire \texttt{eve} ;
+  \item insertion de trois nouveaux documents correspondant à l'énoncé du devoir ;
+  \item requête de sélection sur les événements à sévérité élevée ;
+  \item mise à jour de tous les événements issus de l'IP \texttt{10.0.0.50} ;
+  \item suppression d'un document de déconnexion \texttt{alice}.
+\end{itemize}
+
+Deux erreurs de syntaxe sont visibles avant l'insertion finale des trois documents demandés. Elles proviennent d'une parenthèse ou d'un crochet mal positionné dans \texttt{insertMany}. Après correction, l'insertion est bien confirmée par \texttt{acknowledged: true} avec trois \texttt{ObjectId} générés.
+
+\subsection{Vérification de la surface d'attaque}
+
+Le support de cours impose trois contrôles de sécurité principaux, qui ont tous été vérifiés en pratique :
+
+\begin{enumerate}[label=\alph*)]
+  \item \textbf{Port exposé} : le scan \texttt{nmap -p 27017 localhost} montre \texttt{27017/tcp open mongod}.
+  \item \textbf{Service joignable} : \texttt{curl -s http://localhost:27017} retourne le message MongoDB indiquant qu'un accès HTTP est tenté sur le port natif du driver.
+  \item \textbf{Absence d'authentification} : \texttt{db.adminCommand(\{ listDatabases: 1 \})} renvoie la liste complète des bases, sans aucun identifiant.
+  \item \textbf{Bind réseau} : \texttt{docker port mongo-noseclab} indique \texttt{27017/tcp -> 0.0.0.0:27017}.
+\end{enumerate}
+
+Ces résultats démontrent que le service est exposé et que les données sont accessibles sans contrôle d'accès.
+
+\section{Réponses au devoir maison}
+
+\subsection{Partie A --- Questions de cours}
+
+\subsubsection*{A1. Pourquoi MongoDB est particulièrement adapté aux logs de sécurité hétérogènes}
+
+MongoDB est bien adapté au stockage de logs de sécurité parce qu'il repose sur un modèle document flexible. Les événements provenant d'un pare-feu, d'un système d'authentification, d'un antivirus ou d'un scanner réseau ne possèdent pas forcément les mêmes champs. Une base relationnelle impose en général un schéma plus rigide, alors que MongoDB permet à chaque document d'avoir sa propre structure. Cela évite de multiplier les tables ou d'ajouter de nombreuses colonnes inutiles. Ce modèle facilite aussi l'ingestion rapide de grands volumes de logs et permet des requêtes ciblées sur des attributs comme l'IP source, l'action, la sévérité ou l'horodatage.
+
+\subsubsection*{A2. Différence entre \texttt{updateOne(...,\{ role: "admin" \})} et \texttt{updateOne(...,\{ \$set: \{ role: "admin" \}\})}}
+
+La commande \texttt{updateOne(\{ user: "alice" \}, \{ role: "admin" \})} remplace le document entier par un nouveau document ne contenant que le champ \texttt{role} (en dehors de \texttt{\_id}). Elle est donc dangereuse, car elle détruit les autres champs existants. En revanche, \texttt{updateOne(\{ user: "alice" \}, \{ \$set: \{ role: "admin" \}\})} modifie uniquement le champ ciblé tout en conservant le reste du document. La version dangereuse est donc celle sans \texttt{\$set}, car elle provoque une perte de données.
+
+\subsubsection*{A3. Les trois piliers du triptyque de sécurité appliqué à MongoDB}
+
+Les trois piliers sont :
+\begin{enumerate}[label=\arabic*)]
+  \item \textbf{Réseau} : déterminer qui peut atteindre le service. Exemple MongoDB : publier le port uniquement sur \texttt{127.0.0.1} au lieu de \texttt{0.0.0.0}.
+  \item \textbf{Authentification} : déterminer qui est l'utilisateur. Exemple MongoDB : activer \texttt{--auth} et créer des comptes d'administration ou de service.
+  \item \textbf{Autorisation} : déterminer ce que l'utilisateur authentifié peut faire. Exemple MongoDB : attribuer un rôle en lecture seule à un analyste au lieu de lui donner des droits d'écriture ou d'administration.
+\end{enumerate}
+
+\subsubsection*{A4. Qu'est-ce qu'un \texttt{ObjectId}}
+
+Un \texttt{ObjectId} est un identifiant unique généré par MongoDB pour le champ \texttt{\_id}. Il est composé de 12 octets et est généralement représenté sous forme hexadécimale sur 24 caractères. Il encode notamment un horodatage de création ainsi que d'autres informations internes servant à garantir l'unicité de l'identifiant, comme des composantes liées au processus et à un compteur.
+
+\subsubsection*{A5. Pourquoi \texttt{-p 27017:27017} est plus dangereux que \texttt{-p 127.0.0.1:27017:27017}}
+
+Avec \texttt{-p 27017:27017}, Docker expose le service sur toutes les interfaces réseau de la machine hôte. Toute machine capable d'atteindre cette IP peut donc tenter une connexion au service MongoDB. Avec \texttt{-p 127.0.0.1:27017:27017}, l'accès est limité à la machine locale. Cette seconde configuration réduit fortement la surface d'attaque et empêche un accès direct depuis le réseau local ou Internet.
+
+\subsection{Partie B --- Pratique MongoDB}
+
+\subsubsection*{B1. Insertion de trois nouveaux documents}
+
+Après deux tentatives contenant des erreurs de syntaxe, l'insertion correcte réalisée est la suivante :
+
+\begin{codeblock}
+db.security_logs.insertMany([
+  {src_ip:'10.10.10.10', action:'SSH_Connection', severity:'high', timestamp: new Date()},
+  {device:'server-db02', user:'admin', severity:'critical', action:'malware', timestamp: new Date()},
+  {user:'alice', severity:'info', action:'logout', timestamp: new Date()}
+])
+\end{codeblock}
+
+Résultat observé :
+
+\begin{codeblock}
+{
+  acknowledged: true,
+  insertedIds: {
+    '0': ObjectId('69a96bb49bbed659ad8563be'),
+    '1': ObjectId('69a96bb49bbed659ad8563bf'),
+    '2': ObjectId('69a96bb49bbed659ad8563c0')
+  }
+}
+\end{codeblock}
+
+\paragraph{Analyse.}
+L'opération répond globalement à l'énoncé : trois événements ont bien été ajoutés, avec les sévérités demandées et des horodatages générés à l'instant de l'insertion. En revanche, les champs ne sont pas strictement homogènes avec la structure du dataset initial : le premier document ne précise pas explicitement un statut d'échec SSH et le troisième document ne précise ni \texttt{src\_ip} ni \texttt{status}. Le travail reste valide comme démonstration CRUD, mais une modélisation plus rigoureuse serait recommandée.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{fig_b1_insertmany.png}
+\caption{Insertion réussie des trois documents demandés.}
+\end{figure}
+
+\subsubsection*{B2. Requête des événements \texttt{high} ou \texttt{critical} après 10h00}
+
+La commande exécutée et fonctionnelle est :
+
+\begin{codeblock}
+db.security_logs.find(
+  {severity: {$in:["high","critical"]}, timestamp: {$gte: ISODate("2026-03-04T10:00:00.000Z")}},
+  {timestamp:1, src_ip:1, action:1, severity:1, _id:0}
+).sort({ timestamp: -1 })
+\end{codeblock}
+
+Résultat observé :
+
+\begin{codeblock}
+[
+  {
+    src_ip: '10.10.10.10',
+    action: 'SSH_Connection',
+    severity: 'high',
+    timestamp: ISODate('2026-03-05T11:40:36.154Z')
+  },
+  {
+    severity: 'critical',
+    action: 'malware',
+    timestamp: ISODate('2026-03-05T11:40:36.154Z')
+  }
+]
+\end{codeblock}
+
+\paragraph{Analyse.}
+La logique de filtre, de projection et de tri est correcte. Le seuil temporel utilisé est cependant \texttt{2026-03-04T10:00:00.000Z}, alors que l'énoncé demandait conceptuellement les événements après 10h00 UTC. Comme les trois nouveaux documents ont été créés le 5 mars, la requête retourne bien les documents insérés récemment avec les sévérités attendues. Le troisième document n'apparaît pas car sa sévérité est \texttt{info}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{fig_b2_query.png}
+\caption{Requête filtrant les événements \texttt{high} ou \texttt{critical} avec projection et tri décroissant.}
+\end{figure}
+
+\subsubsection*{B3. Mise à jour des documents issus de l'IP \texttt{10.0.0.50}}
+
+La commande exécutée est :
+
+\begin{codeblock}
+db.security_logs.updateMany(
+  {src_ip:"10.0.0.50"},
+  {$set:{investigate: true, analyst:"Mohammed_Z"}}
+)
+\end{codeblock}
+
+Résultat observé :
+
+\begin{codeblock}
+{
+  acknowledged: true,
+  insertedId: null,
+  matchedCount: 4,
+  modifiedCount: 4,
+  upsertedCount: 0
+}
+\end{codeblock}
+
+Vérification effectuée ensuite :
+
+\begin{codeblock}
+db.security_logs.find({src_ip : "10.0.0.50"})
+\end{codeblock}
+
+Le résultat montre bien quatre documents modifiés, chacun portant les champs \texttt{analyst: 'Mohammed\_Z'} et \texttt{investigate: true}.
+
+\paragraph{Analyse.}
+L'intention du devoir est respectée : tous les documents liés à l'IP ciblée ont été enrichis d'un marqueur d'investigation et d'un analyste. En revanche, deux écarts mineurs existent par rapport à l'énoncé :
+\begin{itemize}
+  \item le champ créé est \texttt{investigate} et non \texttt{investigated} ;
+  \item la valeur de l'analyste est \texttt{"Mohammed\_Z"} au lieu du placeholder \texttt{"votre\_nom"}.
+\end{itemize}
+Sur le plan technique, la mise à jour est néanmoins valide et démontrée.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{fig_b3_update1.png}
+\caption{Résultat de \texttt{updateMany} sur l'IP \texttt{10.0.0.50}.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{fig_b3_find.png}
+\caption{Vérification des quatre documents modifiés après la mise à jour.}
+\end{figure}
+
+\subsubsection*{B4. Suppression du document de déconnexion d'Alice et contrôle du nombre total}
+
+Les commandes observées sont :
+
+\begin{codeblock}
+db.security_logs.countDocuments()
+db.security_logs.deleteOne({user:"alice",action:"logout"})
+db.security_logs.countDocuments()
+\end{codeblock}
+
+Résultats observés :
+
+\begin{codeblock}
+15
+{ acknowledged: true, deletedCount: 1 }
+14
+\end{codeblock}
+
+\paragraph{Analyse.}
+La suppression est techniquement démontrée : le nombre total de documents passe de 15 à 14. Néanmoins, le filtre utilisé reste ambigu, car le dataset initial contenait déjà un événement \texttt{alice/logout}. Ainsi, la commande prouve qu'un document de ce type a été supprimé, mais ne garantit pas formellement qu'il s'agissait du document ajouté en B1. Pour une suppression strictement traçable, il aurait fallu filtrer aussi sur l'horodatage ou sur l'\texttt{ObjectId} retourné par \texttt{insertMany}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{fig_b4_delete.png}
+\caption{Contrôle avant et après suppression d'un document \texttt{alice/logout}.}
+\end{figure}
+
+\subsubsection*{B5. Vérification de l'authentification et analyse sécurité}
+
+Les vérifications observées sont les suivantes :
+
+\begin{codeblock}
+nmap -p 27017 localhost
+curl -s http://localhost:27017
+docker exec -it mongo-noseclab mongosh --eval "db.adminCommand({ listDatabases: 1 })"
+docker port mongo-noseclab
+\end{codeblock}
+
+Résultats essentiels :
+\begin{itemize}
+  \item \texttt{27017/tcp open mongod}
+  \item \texttt{It looks like you are trying to access MongoDB over HTTP on the native driver port.}
+  \item liste complète des bases \texttt{admin}, \texttt{config}, \texttt{local} et \texttt{noseclab} sans mot de passe
+  \item \texttt{27017/tcp -> 0.0.0.0:27017}
+\end{itemize}
+
+\paragraph{Paragraphe d'analyse demandé.}
+Le résultat est problématique car il montre qu'une personne non authentifiée peut non seulement détecter le service MongoDB, mais aussi s'y connecter et lister les bases de données sans fournir d'identifiants. Dans un contexte réel, cela signifie qu'un attaquant pourrait lire, modifier ou supprimer des journaux de sécurité, voire altérer des preuves d'incident. Le bind réseau sur \texttt{0.0.0.0} aggrave encore la situation puisqu'il rend le service potentiellement accessible depuis d'autres machines. Pour corriger cela, il faut activer l'authentification avec \texttt{--auth}, créer des comptes et rôles adaptés, et limiter l'exposition réseau en publiant le port uniquement sur \texttt{127.0.0.1} ou en le protégeant par des règles de filtrage réseau.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.98\textwidth]{fig_b5_surface.png}
+\caption{Vérifications de surface d'attaque : port ouvert, réponse du service, listage des bases sans mot de passe et bind réseau sur toutes les interfaces.}
+\end{figure}
+
+\section{Évaluation synthétique du travail réalisé}
+
+\begin{longtable}{p{3.2cm}p{8.7cm}p{2.2cm}}
+\toprule
+\textbf{Bloc} & \textbf{Constat} & \textbf{Statut} \\
+\midrule
+Déploiement Docker & Conteneur MongoDB lancé avec port exposé et volume persistant & Réussi \\
+Connexion shell & Connexion à \texttt{mongosh} opérationnelle après correction des erreurs initiales & Réussi \\
+CRUD & Insertion, lecture, mise à jour et suppression démontrées & Réussi \\
+Filtrage avancé & Requête \texttt{\$in} + \texttt{\$gte} + projection + tri réalisée & Réussi \\
+Mise à jour ciblée & Quatre documents modifiés pour l'IP \texttt{10.0.0.50} & Réussi \\
+Sécurité & Port ouvert, auth absente, bind réseau exposé explicitement démontrés & Réussi \\
+Précision de modélisation & Quelques écarts de nommage ou de ciblage dans B1, B3 et B4 & À améliorer \\
+\bottomrule
+\end{longtable}
+\newpage
+
+
+\section{Conclusion}
+
+Le travail réalisé couvre correctement les objectifs fondamentaux de la séance : comprendre le modèle MongoDB, exécuter des opérations CRUD, formuler des requêtes d'investigation et identifier une configuration non sécurisée. Le point le plus important sur le plan cybersécurité est la démonstration concrète qu'une instance MongoDB exposée sur \texttt{0.0.0.0:27017} et démarrée sans authentification permet à un tiers de détecter le service et de lister les bases de données sans contrôle d'accès. Le TP atteint donc bien son objectif pédagogique : associer la prise en main technique de MongoDB à un raisonnement sécurité immédiatement applicable.
+
+\end{document}

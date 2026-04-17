@@ -1,0 +1,1 @@
+[{"_id":{"$oid":"69dbd1c64ac1c0996d8563b6"},"username":"analyst_dupont","email":"dupont@entreprise.fr","department":"SOC","clearance_level":"confidential"},{"_id":{"$oid":"69dbd1c64ac1c0996d8563b7"},"username":"analyst_martin","email":"martin@entreprise.fr","department":"SOC","clearance_level":"confidential"}]

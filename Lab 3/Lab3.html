@@ -1,0 +1,1610 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Séance 3 — Hardening MongoDB : Authentification, RBAC, Réseau, Hygiène de configuration</title>
+<style>
+/* ============================================================
+   CSS VARIABLES
+   ============================================================ */
+:root {
+  --bg: #ffffff;
+  --bg-alt: #f8f9fa;
+  --text: #212529;
+  --muted: #6c757d;
+  --primary: #1a5276;
+  --primary-light: #d4e6f1;
+  --accent: #c0392b;
+  --accent-light: #fadbd8;
+  --success: #1e8449;
+  --success-light: #d5f5e3;
+  --warning: #d4ac0d;
+  --warning-light: #fef9e7;
+  --info: #2471a3;
+  --info-light: #d6eaf8;
+  --border: #dee2e6;
+  --codebg: #f4f6f7;
+  --svg-secure: #1e8449;
+  --svg-insecure: #c0392b;
+  --svg-neutral: #2c3e50;
+  --svg-bg: #fdfefe;
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.72;
+  color: var(--text);
+  background: var(--bg);
+  margin: 0;
+  padding: 0;
+}
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 2.5rem;
+}
+
+/* ============================================================
+   TYPOGRAPHY
+   ============================================================ */
+h1 { font-size: 2rem; color: var(--primary); margin-top: 2.5rem; border-bottom: 3px solid var(--primary); padding-bottom: .4rem; }
+h2 { font-size: 1.55rem; color: var(--primary); margin-top: 2.2rem; border-bottom: 2px solid var(--border); padding-bottom: .3rem; }
+h3 { font-size: 1.25rem; color: var(--primary); margin-top: 1.8rem; }
+h4 { font-size: 1.08rem; color: var(--text); margin-top: 1.4rem; font-style: italic; }
+p { margin: .7rem 0; }
+a { color: var(--info); text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { margin: .5rem 0 .5rem 1.5rem; }
+li { margin-bottom: .3rem; }
+
+/* ============================================================
+   CODE
+   ============================================================ */
+code {
+  font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+  font-size: .92em;
+  background: var(--codebg);
+  padding: .15em .4em;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+}
+pre {
+  background: var(--codebg);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--primary);
+  border-radius: 4px;
+  padding: 1rem 1.2rem;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  line-height: 1.55;
+}
+pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: .88em;
+}
+.code-comment { color: var(--muted); font-style: italic; }
+
+/* ============================================================
+   BOXES (ENCADRÉS)
+   ============================================================ */
+.box {
+  border-radius: 6px;
+  padding: 1.1rem 1.3rem;
+  margin: 1.3rem 0;
+  border-left: 5px solid;
+  page-break-inside: avoid;
+}
+.box-title {
+  font-weight: 700;
+  font-size: 1.02em;
+  margin-bottom: .5rem;
+  display: block;
+}
+.box-definition   { background: var(--info-light);    border-color: var(--info);    }
+.box-definition .box-title::before   { content: "📘 "; }
+.box-arret        { background: var(--accent-light);  border-color: var(--accent);  }
+.box-arret .box-title::before        { content: "🛑 "; }
+.box-securite     { background: #fdebd0;              border-color: #e67e22;        }
+.box-securite .box-title::before     { content: "🔒 "; }
+.box-piege        { background: var(--warning-light);  border-color: var(--warning); }
+.box-piege .box-title::before        { content: "⚠️ "; }
+.box-exemple      { background: var(--bg-alt);         border-color: var(--muted);   }
+.box-exemple .box-title::before      { content: "💡 "; }
+.box-checkpoint   { background: var(--success-light);  border-color: var(--success); }
+.box-checkpoint .box-title::before   { content: "✅ "; }
+.box-objectif     { background: var(--primary-light);  border-color: var(--primary); }
+.box-objectif .box-title::before     { content: "🎯 "; }
+.box-activite     { background: #f5eef8;              border-color: #7d3c98;        }
+.box-activite .box-title::before     { content: "🧪 "; }
+.box-depannage    { background: #fef9e7;              border-color: #b7950b;        }
+.box-depannage .box-title::before    { content: "🔧 "; }
+
+/* ============================================================
+   FIGURES
+   ============================================================ */
+figure {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1.2rem;
+  margin: 1.5rem 0;
+  background: var(--bg);
+  text-align: center;
+  page-break-inside: avoid;
+}
+figure svg { max-width: 100%; height: auto; }
+figcaption {
+  font-size: .93em;
+  color: var(--muted);
+  margin-top: .8rem;
+  font-style: italic;
+  text-align: center;
+}
+.interpretation {
+  text-align: justify;
+  font-size: .95em;
+  margin-top: .8rem;
+  padding: .6rem 1rem;
+  background: var(--bg-alt);
+  border-radius: 4px;
+}
+
+/* ============================================================
+   TABLES
+   ============================================================ */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: .94em;
+}
+th, td {
+  border: 1px solid var(--border);
+  padding: .55rem .75rem;
+  text-align: left;
+}
+th { background: var(--primary); color: #fff; font-weight: 600; }
+tr:nth-child(even) td { background: var(--bg-alt); }
+
+/* ============================================================
+   TABLE OF CONTENTS
+   ============================================================ */
+.toc {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1.5rem 2rem;
+  margin: 1.5rem 0;
+}
+.toc-title { font-size: 1.2rem; font-weight: 700; color: var(--primary); margin-bottom: .8rem; }
+.toc ol { counter-reset: toc-counter; list-style: none; padding-left: 0; }
+.toc > ol > li { counter-increment: toc-counter; margin-bottom: .3rem; }
+.toc ol ol { padding-left: 1.4rem; margin: .2rem 0; }
+.toc li a { color: var(--text); }
+.toc li a:hover { color: var(--primary); text-decoration: underline; }
+
+/* ============================================================
+   PAGE DE GARDE
+   ============================================================ */
+.cover {
+  text-align: center;
+  padding: 3rem 2rem 2rem;
+  border-bottom: 4px solid var(--primary);
+  margin-bottom: 2rem;
+}
+.cover h1 { border: none; font-size: 2.2rem; margin-bottom: .3rem; }
+.cover .subtitle { font-size: 1.3rem; color: var(--muted); margin-bottom: 1.5rem; }
+.cover-meta { font-size: .95em; color: var(--text); line-height: 1.9; }
+.cover-meta strong { color: var(--primary); }
+
+/* ============================================================
+   PRINT
+   ============================================================ */
+@media print {
+  body { font-size: 11pt; line-height: 1.6; }
+  .container { max-width: 100%; padding: 0; }
+  .toc { position: static !important; }
+  .box, figure, table, pre { page-break-inside: avoid; }
+  .page-break { page-break-before: always; }
+  h1, h2, h3 { page-break-after: avoid; }
+  a { color: var(--text) !important; text-decoration: none !important; }
+  th { background: #eee !important; color: var(--text) !important; }
+}
+.page-break { page-break-before: always; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ============================================================
+     PAGE DE GARDE
+     ============================================================ -->
+<div class="cover">
+  <h1>Sécurité des Bases de Données NoSQL</h1>
+  <div class="subtitle">Séance 3 — Hardening MongoDB : Authentification, RBAC, Réseau, Hygiène de configuration</div>
+  <hr style="border:1px solid var(--primary); width:60%; margin:1.5rem auto;">
+  <div class="cover-meta">
+    <strong>Formation :</strong> 1<sup>ère</sup> année Cybersécurité<br>
+    <strong>Durée :</strong> 4 heures (cours intégré + travaux pratiques)<br>
+    <strong>Prérequis :</strong> S1 (CRUD, mongosh, Docker) — S2 (modélisation, agrégation, index)<br>
+    <strong>Outils :</strong> Docker, mongosh, terminal Linux/macOS/Windows (PowerShell)<br>
+    <strong>Base de travail :</strong> <code>soc_lite</code> (collections : <code>security_logs</code>, <code>incidents</code>, <code>users</code>)<br><br>
+    <strong>Livrables attendus :</strong><br>
+    1. Captures d'écran commentées (preuves d'accès autorisé / refusé)<br>
+    2. Mini-rapport « Avant / Après » (hardening) au format libre (Markdown, PDF ou texte)<br>
+    3. Checklist hardening remplie et signée
+  </div>
+</div>
+
+<!-- ============================================================
+     OBJECTIFS D'APPRENTISSAGE
+     ============================================================ -->
+<div class="box box-objectif">
+  <span class="box-title">Objectifs d'apprentissage</span>
+  À l'issue de cette séance, l'étudiant sera capable de :
+  <ol>
+    <li><strong>Distinguer</strong> la sécurité de la base de données de la sécurité applicative et <strong>identifier</strong> les composantes de la surface d'attaque d'une instance MongoDB.</li>
+    <li><strong>Activer</strong> l'authentification sur MongoDB et <strong>créer</strong> un compte administrateur initial en respectant l'ordre correct des opérations.</li>
+    <li><strong>Concevoir</strong> une politique RBAC (Role-Based Access Control) conforme au principe du moindre privilège, en créant des rôles et utilisateurs séparés pour des profils métier distincts (application, analyste, manager).</li>
+    <li><strong>Configurer</strong> l'exposition réseau d'un conteneur Docker MongoDB pour limiter la surface d'écoute (bind, port mapping, réseau interne).</li>
+    <li><strong>Appliquer</strong> les bonnes pratiques de gestion des secrets (variables d'environnement, fichier <code>.env</code>) et <strong>détecter</strong> les erreurs de configuration courantes.</li>
+    <li><strong>Vérifier</strong> systématiquement les contrôles d'accès mis en place (tests autorisé / refusé) et <strong>produire</strong> un rapport de durcissement structuré.</li>
+  </ol>
+  <strong>Critères de réussite :</strong> chaque objectif est évalué par au moins une activité pratique avec preuve (capture ou sortie console) et un checkpoint de compréhension.
+</div>
+
+
+
+<!-- ============================================================
+     RAPPEL S1–S2
+     ============================================================ -->
+<h1 id="rappel">Rappel des séances précédentes</h1>
+<p>
+  En <strong>séance 1</strong>, les concepts fondamentaux de NoSQL ont été introduits : modèle documentaire, déploiement de MongoDB via Docker, utilisation du shell <code>mongosh</code>, opérations CRUD de base et la notion de configuration « secure by default » (sans pour autant réaliser d'attaque). En <strong>séance 2</strong>, la modélisation orientée requêtes (embedding vs referencing) a été étudiée, des requêtes typiques d'un analyste SOC ont été formulées sur la base <code>soc_lite</code>, et les index ainsi que la commande <code>explain()</code> ont été explorés pour comprendre l'optimisation des performances.
+</p>
+<p>
+  La présente séance s'appuie directement sur ces acquis : la base <code>soc_lite</code> avec ses collections <code>security_logs</code>, <code>incidents</code> et <code>users</code> constitue le fil conducteur. L'objectif n'est plus d'interroger les données, mais de <strong>protéger l'accès</strong> à ces données.
+</p>
+
+<div class="page-break"></div>
+
+<!-- ============================================================
+     PARTIE 1 — SURFACE D'ATTAQUE
+     ============================================================ -->
+<h1 id="partie1">Partie 1 — Surface d'attaque MongoDB</h1>
+
+<!-- 1.1 -->
+<h2 id="p1-secu-bd-app">1.1 Sécurité de la base de données vs sécurité de l'application</h2>
+
+<div class="box box-definition">
+  <span class="box-title">Définition — Sécurité de la base de données</span>
+  La sécurité de la base de données désigne l'ensemble des mécanismes qui protègent le système de gestion de base de données (SGBD) lui-même : authentification des clients, autorisation des opérations, chiffrement des données au repos et en transit, et contrôle de l'exposition réseau.
+</div>
+
+<p>
+  Il est essentiel de comprendre que la sécurité d'un système d'information repose sur plusieurs couches complémentaires. La <strong>sécurité applicative</strong> concerne le code de l'application (validation des entrées, gestion des sessions, protection contre les injections au niveau de l'API ou du front-end). La <strong>sécurité de la base de données</strong>, en revanche, concerne la couche de persistance elle-même : qui peut se connecter, quelles opérations sont autorisées, sur quelles données, et depuis quel réseau.
+</p>
+<p>
+  Ces deux couches ne se substituent pas l'une à l'autre. Une application parfaitement sécurisée ne protège pas contre un accès direct à la base de données si celle-ci est exposée sans authentification. Inversement, une base de données correctement durcie ne protège pas contre une faille dans le code applicatif (par exemple, une injection NoSQL exploitée via l'API de l'application).
+</p>
+<p>
+  Dans le contexte d'un SOC (Security Operations Center), les données stockées dans la base — journaux de sécurité, incidents, informations sur les utilisateurs — sont des actifs sensibles. Un accès non autorisé en lecture permettrait à un attaquant de comprendre les capacités de détection de l'organisation. Un accès en écriture permettrait de modifier ou supprimer des preuves d'intrusion. La protection de la base de données est donc un enjeu direct de l'intégrité du processus de réponse aux incidents.
+</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Critère</th>
+      <th>Sécurité applicative</th>
+      <th>Sécurité de la base de données</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Périmètre</td>
+      <td>Code, API, interface utilisateur</td>
+      <td>SGBD, fichiers de données, protocole réseau</td>
+    </tr>
+    <tr>
+      <td>Authentification</td>
+      <td>Utilisateurs finaux (login/mot de passe, SSO)</td>
+      <td>Comptes techniques et humains se connectant au SGBD</td>
+    </tr>
+    <tr>
+      <td>Autorisation</td>
+      <td>Rôles métier dans l'application</td>
+      <td>Rôles SGBD (RBAC) : droits sur collections/opérations</td>
+    </tr>
+    <tr>
+      <td>Menace typique</td>
+      <td>Injection (SQL/NoSQL), XSS, CSRF</td>
+      <td>Accès direct non authentifié, élévation de privilèges</td>
+    </tr>
+    <tr>
+      <td>Responsable</td>
+      <td>Développeur, DevSecOps</td>
+      <td>DBA, administrateur système, DevSecOps</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="box box-piege">
+  <span class="box-title">Piège fréquent — « L'application vérifie déjà les droits »</span>
+  <p>
+    Une erreur courante consiste à considérer que, puisque l'application gère ses propres rôles (administrateur, analyste, lecteur), il n'est pas nécessaire de configurer des comptes séparés au niveau de MongoDB. Ce raisonnement est dangereux : si un attaquant obtient un accès réseau au port MongoDB (par exemple via un mouvement latéral), il contourne entièrement l'application et ses contrôles. Sans authentification ni RBAC au niveau de la base, toutes les données sont alors accessibles en lecture et en écriture.
+  </p>
+  <p><strong>Impact sécurité :</strong> compromission totale des données (confidentialité, intégrité, disponibilité) sans aucune trace dans les journaux applicatifs.</p>
+</div>
+
+<div class="box box-checkpoint">
+  <span class="box-title">Question de compréhension</span>
+  <p><strong>Q :</strong> Un pare-feu applicatif (WAF) protège-t-il contre un accès direct au port 27017 de MongoDB depuis le réseau interne ? Justifier.</p>
+  <p><strong>Réponse attendue :</strong> Non. Un WAF (Web Application Firewall) filtre le trafic HTTP/HTTPS à destination de l'application web. Un accès direct au port 27017 utilise le protocole MongoDB Wire Protocol, qui n'est pas inspecté par un WAF. Seuls des contrôles au niveau réseau (pare-feu réseau, segmentation, binding) et au niveau du SGBD (authentification, RBAC) protègent contre ce vecteur.</p>
+</div>
+
+<!-- 1.2 -->
+<h2 id="p1-sans-auth">1.2 Pourquoi « MongoDB sans auth » est dangereux, même en local</h2>
+
+<div class="box box-definition">
+  <span class="box-title">Définition — Mode sans authentification</span>
+  Par défaut, une instance MongoDB démarrée sans le paramètre <code>--auth</code> (ou sans configuration équivalente) accepte toute connexion entrante sans exiger d'identifiants. Tout client capable d'atteindre le port d'écoute obtient un accès complet (lecture, écriture, administration).
+</div>
+
+<p>
+  Ce comportement par défaut a une raison historique : simplifier la prise en main et le développement local. Cependant, il constitue un risque majeur, même dans un environnement qui semble isolé.
+</p>
+
+<p>
+  <strong>Risque en réseau local (LAN) :</strong> dans un réseau d'entreprise ou un réseau universitaire, de nombreuses machines partagent le même sous-réseau. Si une instance MongoDB écoute sur <code>0.0.0.0:27017</code> sans authentification, toute machine du même réseau peut s'y connecter. Un poste compromis, un stagiaire curieux, ou un script automatisé de reconnaissance interne suffisent pour accéder à l'intégralité des données. Les attaques par mouvement latéral exploitent précisément ce type de service exposé sans contrôle.
+</p>
+
+<p>
+  <strong>Risque sur le poste local :</strong> même sur <code>127.0.0.1</code>, une application malveillante installée sur le poste (un navigateur compromis exécutant du JavaScript malicieux, un malware, ou un outil de développement piégé) peut initier une connexion vers <code>localhost:27017</code>. De plus, certaines configurations Docker publient par défaut le port sur <code>0.0.0.0</code> (toutes les interfaces), rendant la base accessible au-delà de la machine hôte sans que l'utilisateur en soit conscient.
+</p>
+
+<p>
+  <strong>Précédents documentés :</strong> entre 2016 et 2017, des dizaines de milliers d'instances MongoDB exposées sur Internet sans authentification ont été victimes de rançongiciels automatisés. Les attaquants, utilisant de simples scripts, se connectaient, copiaient les données, les supprimaient, puis déposaient une note de rançon. Ces attaques ne nécessitaient aucune compétence avancée : la simple absence d'authentification suffisait.
+</p>
+
+<div class="box box-securite">
+  <span class="box-title">Principe de sécurité — Défense en profondeur</span>
+  <p>
+    Ne jamais considérer qu'une seule couche de protection suffit. L'authentification, le RBAC, le contrôle réseau et la gestion des secrets sont des couches complémentaires. La compromission d'une couche ne doit pas entraîner la compromission totale du système. Ce principe, dit de <strong>défense en profondeur</strong> (<em>defense in depth</em>), est un fondement de la cybersécurité.
+  </p>
+</div>
+
+<div class="box box-exemple">
+  <span class="box-title">Exemple commenté — Connexion sans identifiants</span>
+  <p>Considérons une instance MongoDB lancée sans authentification :</p>
+<pre><code><span class="code-comment"># Lancement d'un conteneur MongoDB SANS authentification</span>
+docker run -d --name mongo_insecure -p 27017:27017 mongo:7
+
+<span class="code-comment"># Connexion depuis n'importe quel client réseau — aucun identifiant requis</span>
+mongosh "mongodb://localhost:27017"
+
+<span class="code-comment"># Une fois connecté, accès total :</span>
+use soc_lite
+db.security_logs.find().limit(3)   <span class="code-comment">// Lecture de tous les journaux</span>
+db.incidents.drop()                <span class="code-comment">// Suppression de la collection entière</span>
+db.dropDatabase()                  <span class="code-comment">// Destruction de la base complète</span></code></pre>
+  <p>
+    <strong>Ligne 2 :</strong> le paramètre <code>-p 27017:27017</code> publie le port MongoDB sur <strong>toutes les interfaces</strong> de l'hôte (<code>0.0.0.0</code>). Toute machine pouvant atteindre l'hôte sur le port 27017 peut se connecter.<br>
+    <strong>Ligne 5 :</strong> la chaîne de connexion ne contient ni nom d'utilisateur ni mot de passe. La connexion réussit immédiatement.<br>
+    <strong>Lignes 8–10 :</strong> sans RBAC, le client dispose implicitement de droits d'administration totaux. Il peut lire les données sensibles, supprimer des collections entières, voire détruire la base. Dans un contexte SOC, cela signifie la perte des preuves d'investigation.
+  </p>
+</div>
+
+<div class="box box-piege">
+  <span class="box-title">Piège fréquent — Docker et le binding par défaut</span>
+  <p>
+    Lorsqu'on utilise <code>docker run -p 27017:27017</code>, Docker lie le port sur <code>0.0.0.0</code> par défaut (toutes les interfaces réseau). Beaucoup de développeurs pensent que le conteneur n'est accessible que localement. En réalité, si la machine possède une interface réseau connectée à un LAN ou à Internet, le port 27017 est exposé sur cette interface. Pour restreindre l'écoute à la boucle locale, il faut explicitement écrire <code>-p 127.0.0.1:27017:27017</code>.
+  </p>
+  <p><strong>Impact sécurité :</strong> exposition involontaire de la base à l'ensemble du réseau local, voire à Internet si la machine est directement connectée.</p>
+</div>
+
+<!-- 1.3 Figure 1 -->
+<h2 id="p1-fig1">1.3 Figure 1 — Instance insecure vs instance secure</h2>
+
+<figure>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 420" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif">
+  <!-- Background panels -->
+  <rect x="10" y="50" width="400" height="360" rx="12" fill="#fdedec" stroke="#c0392b" stroke-width="2"/>
+  <rect x="450" y="50" width="400" height="360" rx="12" fill="#d5f5e3" stroke="#1e8449" stroke-width="2"/>
+
+  <!-- Titles -->
+  <text x="210" y="30" text-anchor="middle" font-size="17" font-weight="700" fill="#c0392b">❌ Configuration INSECURE</text>
+  <text x="650" y="30" text-anchor="middle" font-size="17" font-weight="700" fill="#1e8449">✅ Configuration SECURE</text>
+
+  <!-- INSECURE SIDE -->
+  <!-- Internet cloud -->
+  <ellipse cx="100" cy="120" rx="70" ry="30" fill="#f9ebea" stroke="#c0392b" stroke-width="1.5"/>
+  <text x="100" y="125" text-anchor="middle" font-size="13" fill="#c0392b">Internet / LAN</text>
+
+  <!-- Arrow Internet → MongoDB -->
+  <line x1="170" y1="120" x2="240" y2="180" stroke="#c0392b" stroke-width="2" marker-end="url(#arrowRed)"/>
+  <text x="220" y="145" font-size="11" fill="#c0392b">port 27017</text>
+
+  <!-- MongoDB box insecure -->
+  <rect x="220" y="170" width="170" height="70" rx="8" fill="#fff" stroke="#c0392b" stroke-width="2"/>
+  <text x="305" y="195" text-anchor="middle" font-size="14" font-weight="600" fill="#c0392b">MongoDB</text>
+  <text x="305" y="215" text-anchor="middle" font-size="11" fill="#c0392b">auth: OFF</text>
+  <text x="305" y="230" text-anchor="middle" font-size="11" fill="#c0392b">bind: 0.0.0.0</text>
+
+  <!-- Attacker -->
+  <rect x="50" y="280" width="140" height="50" rx="8" fill="#fff" stroke="#c0392b" stroke-width="1.5"/>
+  <text x="120" y="302" text-anchor="middle" font-size="12" fill="#c0392b">🧑‍💻 N'importe qui</text>
+  <text x="120" y="318" text-anchor="middle" font-size="11" fill="#c0392b">(aucun identifiant)</text>
+
+  <!-- Arrow attacker → MongoDB -->
+  <line x1="190" y1="300" x2="240" y2="240" stroke="#c0392b" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arrowRed)"/>
+  <text x="195" y="278" font-size="11" fill="#c0392b">accès total ⚠️</text>
+
+  <!-- Data -->
+  <rect x="240" y="290" width="130" height="100" rx="6" fill="#fef9e7" stroke="#c0392b" stroke-width="1"/>
+  <text x="305" y="310" text-anchor="middle" font-size="11" fill="#c0392b">soc_lite</text>
+  <text x="305" y="328" text-anchor="middle" font-size="10" fill="#333">security_logs ⬅ R/W</text>
+  <text x="305" y="344" text-anchor="middle" font-size="10" fill="#333">incidents ⬅ R/W</text>
+  <text x="305" y="360" text-anchor="middle" font-size="10" fill="#333">users ⬅ R/W</text>
+  <text x="305" y="380" text-anchor="middle" font-size="10" fill="#c0392b">drop() possible !</text>
+
+  <!-- SECURE SIDE -->
+  <!-- Internet cloud blocked -->
+  <ellipse cx="540" cy="120" rx="70" ry="30" fill="#eafaf1" stroke="#1e8449" stroke-width="1.5"/>
+  <text x="540" y="125" text-anchor="middle" font-size="13" fill="#1e8449">Internet / LAN</text>
+
+  <!-- Blocked arrow -->
+  <line x1="610" y1="120" x2="670" y2="160" stroke="#aaa" stroke-width="2" stroke-dasharray="4,4"/>
+  <text x="670" y="145" font-size="18" fill="#c0392b">🚫</text>
+  <text x="655" y="125" font-size="10" fill="#999">port non publié</text>
+
+  <!-- MongoDB box secure -->
+  <rect x="660" y="170" width="170" height="70" rx="8" fill="#fff" stroke="#1e8449" stroke-width="2"/>
+  <text x="745" y="195" text-anchor="middle" font-size="14" font-weight="600" fill="#1e8449">MongoDB</text>
+  <text x="745" y="215" text-anchor="middle" font-size="11" fill="#1e8449">auth: ON (SCRAM)</text>
+  <text x="745" y="230" text-anchor="middle" font-size="11" fill="#1e8449">bind: 127.0.0.1</text>
+
+  <!-- Authorized user -->
+  <rect x="480" y="280" width="140" height="50" rx="8" fill="#fff" stroke="#1e8449" stroke-width="1.5"/>
+  <text x="550" y="302" text-anchor="middle" font-size="12" fill="#1e8449">🔑 soc_analyst_ro</text>
+  <text x="550" y="318" text-anchor="middle" font-size="11" fill="#1e8449">(identifiants requis)</text>
+
+  <!-- Arrow authorized user → MongoDB -->
+  <line x1="620" y1="300" x2="660" y2="240" stroke="#1e8449" stroke-width="2" marker-end="url(#arrowGreen)"/>
+  <text x="625" y="278" font-size="11" fill="#1e8449">accès limité ✓</text>
+
+  <!-- Data secure -->
+  <rect x="680" y="290" width="130" height="100" rx="6" fill="#eafaf1" stroke="#1e8449" stroke-width="1"/>
+  <text x="745" y="310" text-anchor="middle" font-size="11" fill="#1e8449">soc_lite</text>
+  <text x="745" y="328" text-anchor="middle" font-size="10" fill="#333">security_logs ⬅ Read</text>
+  <text x="745" y="344" text-anchor="middle" font-size="10" fill="#333">incidents ⬅ Read</text>
+  <text x="745" y="360" text-anchor="middle" font-size="10" fill="#aaa">users ⬅ aucun accès</text>
+  <text x="745" y="380" text-anchor="middle" font-size="10" fill="#1e8449">drop() interdit ✓</text>
+
+  <!-- Arrow markers -->
+  <defs>
+    <marker id="arrowRed" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#c0392b"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#1e8449"/>
+    </marker>
+  </defs>
+</svg>
+<figcaption>Figure 1 — Comparaison d'une instance MongoDB insecure (gauche) et secure (droite).</figcaption>
+</figure>
+
+<div class="interpretation">
+  <strong>Interprétation :</strong> La figure 1 oppose deux configurations d'une même instance MongoDB hébergeant la base <code>soc_lite</code>. À gauche, la configuration <em>insecure</em> présente trois faiblesses cumulées : l'authentification est désactivée (<code>auth: OFF</code>), le binding est configuré sur toutes les interfaces (<code>0.0.0.0</code>), et le port 27017 est publié sans restriction. Tout client réseau — y compris un attaquant ayant compromis une machine du LAN — peut se connecter sans identifiant et obtenir un accès complet : lecture des journaux de sécurité, modification des incidents, voire suppression de la base entière via <code>drop()</code>. À droite, la configuration <em>secure</em> applique trois couches de protection complémentaires : l'authentification SCRAM est activée (seuls les comptes déclarés peuvent se connecter), le binding est restreint à <code>127.0.0.1</code> (seules les connexions locales sont acceptées), et le port n'est pas publié vers l'extérieur du conteneur Docker. L'utilisateur <code>soc_analyst_ro</code>, même après authentification, n'a accès qu'en lecture aux collections autorisées par son rôle. La collection <code>users</code> lui est invisible, et les opérations destructrices sont interdites. Cette comparaison illustre le principe de défense en profondeur : chaque couche réduit la surface d'attaque indépendamment des autres.
+</div>
+
+<!-- 1.4 Activité 1 -->
+<h2 id="p1-activite1">1.4 Activité 1 — Déployer une instance insecure puis une instance secure</h2>
+
+<div class="box box-activite">
+  <span class="box-title">Activité 1 — Observer la différence insecure vs secure</span>
+  <p><strong>Objectif :</strong> constater concrètement qu'une instance MongoDB sans authentification accepte toute connexion, puis vérifier qu'une instance avec authentification la refuse.</p>
+  <p><strong>Durée estimée :</strong> 25 minutes</p>
+  <p><strong>Prérequis :</strong> Docker installé et fonctionnel, terminal disponible, aucune instance MongoDB en cours sur le port 27017.</p>
+
+  <h4>Étape 1 — Démarrer une instance SANS authentification</h4>
+<pre><code><span class="code-comment"># Nettoyage préventif (ignorer l'erreur si le conteneur n'existe pas)</span>
+docker rm -f mongo_insecure 2>/dev/null
+
+<span class="code-comment"># Lancement sans authentification, port publié sur toutes les interfaces</span>
+docker run -d --name mongo_insecure -p 27017:27017 mongo:7</code></pre>
+  <p><strong>Pourquoi :</strong> cette commande crée un conteneur MongoDB en mode par défaut (authentification désactivée). Le flag <code>-p 27017:27017</code> publie le port sur <code>0.0.0.0</code>.</p>
+
+  <h4>Étape 2 — Se connecter sans identifiants et vérifier l'accès</h4>
+<pre><code><span class="code-comment"># Connexion anonyme</span>
+mongosh "mongodb://localhost:27017"
+
+<span class="code-comment"># Dans le shell mongosh :</span>
+use soc_lite
+
+<span class="code-comment"># Insérer un document de test</span>
+db.security_logs.insertOne({
+  timestamp: new Date(),
+  source_ip: "10.0.0.99",
+  event_type: "test_insecure",
+  message: "Ce document a été inséré sans authentification"
+})
+
+<span class="code-comment"># Vérifier que l'insertion a réussi</span>
+db.security_logs.find({ event_type: "test_insecure" })
+
+<span class="code-comment"># Vérifier les droits d'administration</span>
+db.adminCommand({ listDatabases: 1 })</code></pre>
+  <p><strong>Résultat attendu :</strong> la connexion réussit immédiatement. L'insertion fonctionne. La commande <code>listDatabases</code> retourne la liste de toutes les bases sans erreur. Cela démontre qu'un client anonyme dispose d'un accès administrateur complet.</p>
+
+  <p><strong>🔴 Preuve à conserver :</strong> copier-coller la sortie de <code>listDatabases</code> dans votre rapport.</p>
+
+  <h4>Étape 3 — Arrêter l'instance insecure</h4>
+<pre><code>docker rm -f mongo_insecure</code></pre>
+
+  <h4>Étape 4 — Démarrer une instance AVEC authentification</h4>
+<pre><code><span class="code-comment"># Lancement avec authentification activée et un admin initial</span>
+docker run -d --name mongo_secure \
+  -p 127.0.0.1:27017:27017 \
+  -e MONGO_INITDB_ROOT_USERNAME=adminSoc \
+  -e MONGO_INITDB_ROOT_PASSWORD=Passw0rd_S3cure! \
+  mongo:7</code></pre>
+  <p><strong>Pourquoi :</strong> les variables <code>MONGO_INITDB_ROOT_USERNAME</code> et <code>MONGO_INITDB_ROOT_PASSWORD</code> créent automatiquement un utilisateur administrateur dans la base <code>admin</code> et activent l'authentification. Le port est cette fois lié à <code>127.0.0.1</code> uniquement.</p>
+
+  <h4>Étape 5 — Tenter une connexion anonyme (doit échouer)</h4>
+<pre><code><span class="code-comment"># Tentative de connexion sans identifiants</span>
+mongosh "mongodb://localhost:27017"
+
+<span class="code-comment"># Dans mongosh, tenter une opération :</span>
+use soc_lite
+db.security_logs.find()
+<span class="code-comment"># → Erreur attendue : requires authentication</span></code></pre>
+  <p><strong>Résultat attendu :</strong> la connexion TCP est acceptée (le protocole autorise la connexion initiale), mais toute opération sur les données échoue avec un message de type <code>MongoServerError: command find requires authentication</code>.</p>
+
+  <p><strong>🔴 Preuve à conserver :</strong> copier-coller le message d'erreur dans votre rapport.</p>
+
+  <h4>Étape 6 — Se connecter avec les identifiants corrects</h4>
+<pre><code><span class="code-comment"># Connexion authentifiée</span>
+mongosh "mongodb://adminSoc:Passw0rd_S3cure!@localhost:27017/admin"
+
+<span class="code-comment"># Vérifier l'accès admin</span>
+db.adminCommand({ listDatabases: 1 })
+<span class="code-comment"># → Doit réussir cette fois</span></code></pre>
+  <p><strong>Résultat attendu :</strong> la connexion réussit. La commande <code>listDatabases</code> retourne la liste des bases. L'accès est fonctionnel uniquement avec les bons identifiants.</p>
+
+  <p><strong>🔴 Preuve à conserver :</strong> copier-coller la sortie de <code>listDatabases</code> (avec connexion authentifiée).</p>
+</div>
+
+<div class="box box-depannage">
+  <span class="box-title">Dépannage — Activité 1</span>
+  <table>
+    <thead><tr><th>Symptôme</th><th>Cause probable</th><th>Solution</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>port is already allocated</code></td>
+        <td>Un autre conteneur ou processus utilise le port 27017</td>
+        <td><code>docker ps</code> pour identifier le conteneur, puis <code>docker rm -f &lt;nom&gt;</code></td>
+      </tr>
+      <tr>
+        <td><code>connection refused</code> sur localhost</td>
+        <td>Le conteneur n'a pas démarré correctement</td>
+        <td><code>docker logs mongo_secure</code> pour diagnostiquer</td>
+      </tr>
+      <tr>
+        <td>La connexion anonyme fonctionne même après l'étape 4</td>
+        <td>Connexion au mauvais conteneur (l'ancien n'a pas été supprimé)</td>
+        <td>Vérifier avec <code>docker ps</code> qu'un seul conteneur MongoDB tourne</td>
+      </tr>
+      <tr>
+        <td><code>Authentication failed</code> avec les bons identifiants</td>
+        <td>Le <code>authenticationDatabase</code> n'est pas spécifié ou incorrect</td>
+        <td>S'assurer que l'URI contient <code>/admin</code> à la fin (c'est la base d'authentification par défaut pour le compte root)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 1.5 Checkpoint 1 -->
+<h2 id="p1-checkpoint1">1.5 Checkpoint 1</h2>
+
+<div class="box box-checkpoint">
+  <span class="box-title">Checkpoint 1 — Vérification des acquis</span>
+
+  <p><strong>Question 1 :</strong> Citer trois risques concrets liés à une instance MongoDB démarrée sans authentification sur un réseau local universitaire.</p>
+  <p><strong>Réponse attendue :</strong>
+    (1) Tout poste du réseau peut lire les données sensibles (ex. : journaux de sécurité, incidents).
+    (2) Un attaquant (ou un utilisateur malveillant) peut modifier ou supprimer des données, compromettant l'intégrité des preuves.
+    (3) Un script automatisé (ransomware, worm) peut découvrir le port 27017, supprimer les données et déposer une note de rançon — ce scénario a été observé massivement en 2016-2017.
+  </p>
+
+  <p><strong>Question 2 :</strong> Quelle est la différence entre <code>-p 27017:27017</code> et <code>-p 127.0.0.1:27017:27017</code> dans Docker ?</p>
+  <p><strong>Réponse attendue :</strong>
+    <code>-p 27017:27017</code> publie le port sur toutes les interfaces réseau de l'hôte (<code>0.0.0.0</code>), le rendant accessible depuis le réseau local et potentiellement depuis Internet.
+    <code>-p 127.0.0.1:27017:27017</code> publie le port uniquement sur l'interface de boucle locale : seuls les processus de la machine hôte peuvent y accéder.
+  </p>
+
+  <p><strong>Question 3 :</strong> Pourquoi l'authentification au niveau de la base de données est-elle nécessaire même si l'application possède son propre système de login ?</p>
+  <p><strong>Réponse attendue :</strong>
+    Le système de login de l'application protège l'accès via l'interface applicative (HTTP). Cependant, si un attaquant obtient un accès réseau au port MongoDB (mouvement latéral, mauvaise configuration réseau), il contourne l'application et se connecte directement à la base. Sans authentification MongoDB, il obtient un accès complet. Les deux couches de contrôle sont complémentaires et nécessaires (principe de défense en profondeur).
+  </p>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ============================================================
+     PARTIE 2 — AUTHENTIFICATION
+     ============================================================ -->
+<h1 id="partie2">Partie 2 — Authentification : admin initial et authDB</h1>
+
+<!-- 2.1 -->
+<h2 id="p2-concepts">2.1 Mécanisme d'authentification MongoDB</h2>
+
+<div class="box box-definition">
+  <span class="box-title">Définition — Authentification</span>
+  L'authentification est le processus par lequel le serveur MongoDB vérifie l'identité d'un client qui tente de se connecter. Elle repose sur la présentation d'identifiants (nom d'utilisateur et mot de passe) associés à un compte déclaré dans une base de données d'authentification.
+</div>
+
+<p>
+  MongoDB stocke les comptes utilisateurs dans des bases de données spécifiques. Chaque utilisateur est défini <strong>dans</strong> une base de données, appelée sa <strong>base d'authentification</strong> (<em>authentication database</em>). Le couple <code>(nom d'utilisateur, base d'authentification)</code> forme l'identifiant unique d'un compte. Cela signifie qu'un utilisateur nommé <code>alice</code> dans la base <code>admin</code> est un compte <em>distinct</em> d'un utilisateur nommé <code>alice</code> dans la base <code>soc_lite</code>.
+</p>
+
+<p>
+  Lorsqu'un client se connecte, il doit indiquer trois informations : le nom d'utilisateur, le mot de passe, et la base d'authentification. Si l'une de ces trois informations est incorrecte, l'authentification échoue. C'est une source fréquente d'erreurs pour les débutants, qui oublient de spécifier la bonne base d'authentification.
+</p>
+
+<p>
+  Le mécanisme d'authentification par défaut de MongoDB est <strong>SCRAM</strong> (Salted Challenge Response Authentication Mechanism). D'autres mécanismes existent (x.509, LDAP, Kerberos), mais ils sortent du périmètre de cette séance d'introduction. SCRAM est le mécanisme adapté à un déploiement local ou de développement.
+</p>
+
+<p>
+  L'activation de l'authentification se fait de deux manières principales :
+</p>
+<ul>
+  <li><strong>Via les variables d'environnement Docker</strong> (<code>MONGO_INITDB_ROOT_USERNAME</code> / <code>MONGO_INITDB_ROOT_PASSWORD</code>) : l'image officielle MongoDB détecte ces variables et crée automatiquement un utilisateur root dans la base <code>admin</code>, puis démarre le serveur avec l'authentification activée.</li>
+  <li><strong>Via le fichier de configuration</strong> (<code>mongod.conf</code>) avec le paramètre <code>security.authorization: enabled</code>, combiné à la création manuelle de l'administrateur <em>avant</em> l'activation (ou en utilisant la <em>localhost exception</em>).</li>
+</ul>
+<p>
+  Dans le cadre de cette séance, la première méthode (variables d'environnement Docker) est privilégiée car elle est plus simple et moins sujette à erreur pour un débutant.
+</p>
+
+<!-- 2.2 -->
+<h2 id="p2-scram">2.2 SCRAM — Principe conceptuel</h2>
+
+<div class="box box-definition">
+  <span class="box-title">Définition — SCRAM</span>
+  SCRAM (<em>Salted Challenge Response Authentication Mechanism</em>) est un protocole d'authentification par défi-réponse. Il permet au client de prouver qu'il connaît le mot de passe <strong>sans jamais transmettre le mot de passe en clair</strong> sur le réseau.
+</div>
+
+<p>
+  Le fonctionnement de SCRAM peut être résumé conceptuellement en quatre étapes (sans entrer dans les détails cryptographiques) :
+</p>
+
+<ol>
+  <li><strong>Stockage côté serveur :</strong> lors de la création du compte, le serveur ne stocke pas le mot de passe en clair. Il stocke une version dérivée du mot de passe, obtenue en appliquant une fonction de hachage itérée combinée à un <strong>sel</strong> (<em>salt</em>) aléatoire. Le sel garantit que deux utilisateurs ayant le même mot de passe auront des valeurs stockées différentes.</li>
+  <li><strong>Défi (<em>challenge</em>) :</strong> lors de la connexion, le serveur envoie au client un défi aléatoire unique (un <em>nonce</em>) ainsi que le sel associé au compte.</li>
+  <li><strong>Réponse (<em>response</em>) :</strong> le client calcule une preuve cryptographique à partir du mot de passe saisi par l'utilisateur, du sel reçu et du défi. Cette preuve est envoyée au serveur.</li>
+  <li><strong>Vérification :</strong> le serveur effectue le même calcul avec les informations qu'il possède. Si les résultats correspondent, l'authentification est acceptée. Le mot de passe n'a jamais transité sur le réseau.</li>
+</ol>
+
+<div class="box box-securite">
+  <span class="box-title">Intérêt sécurité de SCRAM</span>
+  <p>
+    SCRAM offre trois propriétés de sécurité importantes :
+    (1) le mot de passe ne circule jamais en clair (protection contre l'interception réseau) ;
+    (2) le serveur ne stocke pas le mot de passe en clair (protection en cas de compromission de la base de comptes) ;
+    (3) chaque session utilise un défi aléatoire différent (protection contre les attaques par rejeu).
+  </p>
+  <p>
+    Cependant, SCRAM ne protège pas contre un mot de passe faible. Si un attaquant obtient les données stockées côté serveur (le hash salé), il peut tenter une attaque par dictionnaire ou force brute hors-ligne. Le choix d'un mot de passe robuste reste indispensable.
+  </p>
+</div>
+
+<div class="box box-piege">
+  <span class="box-title">Piège fréquent — Confondre « chiffrement du protocole » et « authentification »</span>
+  <p>
+    SCRAM assure que le mot de passe ne transite pas en clair, mais il <strong>ne chiffre pas le contenu des requêtes et des réponses</strong>. Les documents insérés ou lus circulent en clair sur le réseau. Pour chiffrer l'ensemble du trafic, il faut activer TLS/SSL (hors périmètre de cette séance). L'authentification et le chiffrement du transport sont deux mécanismes distincts et complémentaires.
+  </p>
+  <p><strong>Impact sécurité :</strong> sans TLS, un attaquant en position d'écoute réseau (ex. : ARP spoofing sur le LAN) peut lire le contenu des requêtes MongoDB même si l'authentification est activée.</p>
+</div>
+
+<!-- 2.3 -->
+<h2 id="p2-admin">2.3 Création de l'administrateur initial</h2>
+
+<p>
+  L'administrateur initial est le premier compte créé sur une instance MongoDB sécurisée. Ce compte possède le rôle <code>root</code> dans la base <code>admin</code>, ce qui lui confère tous les privilèges sur toutes les bases. Son existence est une condition préalable à la création de comptes plus restreints.
+</p>
+
+<p>
+  <strong>L'ordre des opérations est critique.</strong> Il existe deux approches :
+</p>
+
+<h4>Approche 1 — Variables d'environnement Docker (recommandée pour les débutants)</h4>
+<pre><code><span class="code-comment"># L'image officielle crée l'admin et active l'auth automatiquement</span>
+docker run -d --name mongo_secure \
+  -e MONGO_INITDB_ROOT_USERNAME=adminSoc \
+  -e MONGO_INITDB_ROOT_PASSWORD=Passw0rd_S3cure! \
+  mongo:7</code></pre>
+<p>
+  <strong>Ligne 3 :</strong> la variable <code>MONGO_INITDB_ROOT_USERNAME</code> définit le nom du compte administrateur.<br>
+  <strong>Ligne 4 :</strong> la variable <code>MONGO_INITDB_ROOT_PASSWORD</code> définit son mot de passe.<br>
+  <strong>Comportement automatique :</strong> l'image Docker crée un utilisateur avec le rôle <code>root</code> dans la base <code>admin</code> et démarre <code>mongod</code> avec l'authentification activée. L'étudiant n'a pas besoin de gérer la séquence manuellement.
+</p>
+
+<h4>Approche 2 — Création manuelle (pour comprendre le mécanisme)</h4>
+<p>
+  Cette approche est présentée à titre pédagogique. Elle illustre la <em>localhost exception</em> : lorsque l'authentification est activée mais qu'aucun utilisateur n'existe encore, MongoDB autorise une connexion depuis <code>localhost</code> pour créer le premier administrateur.
+</p>
+<pre><code><span class="code-comment"># 1. Démarrer MongoDB avec auth activée mais SANS utilisateur initial</span>
+docker run -d --name mongo_manual -p 127.0.0.1:27017:27017 mongo:7 \
+  mongod --auth --bind_ip_all
+
+<span class="code-comment"># 2. Se connecter en local (localhost exception active)</span>
+mongosh "mongodb://localhost:27017"
+
+<span class="code-comment"># 3. Créer l'administrateur dans la base admin</span>
+use admin
+db.createUser({
+  user: "adminSoc",
+  pwd: "Passw0rd_S3cure!",
+  roles: [{ role: "root", db: "admin" }]
+})
+
+<span class="code-comment"># 4. La localhost exception se désactive automatiquement</span>
+<span class="code-comment"># 5. Se déconnecter et se reconnecter avec les identifiants</span>
+quit()
+mongosh "mongodb://adminSoc:Passw0rd_S3cure!@localhost:27017/admin"</code></pre>
+
+<div class="box box-arret">
+  <span class="box-title">ARRÊT — Activer l'auth AVANT de créer l'admin</span>
+  <p>
+    Si l'on active <code>--auth</code> et qu'on <strong>oublie</strong> de créer l'administrateur (et que la <em>localhost exception</em> a déjà été consommée ou que l'on n'est pas en local), on se retrouve face à une instance inaccessible. Aucune connexion ne sera autorisée. La seule solution est de redémarrer l'instance <strong>sans</strong> l'authentification, créer l'admin, puis réactiver l'authentification. En production, cela implique un arrêt de service.
+  </p>
+  <p><strong>Règle absolue :</strong> toujours s'assurer qu'un administrateur existe (ou que la <em>localhost exception</em> est utilisable) <strong>avant</strong> ou <strong>au moment</strong> de l'activation de l'authentification.</p>
+</div>
+
+<!-- 2.4 -->
+<h2 id="p2-authdb">2.4 La notion d'authenticationDatabase</h2>
+
+<div class="box box-definition">
+  <span class="box-title">Définition — authenticationDatabase</span>
+  La <em>authentication database</em> (base d'authentification) est la base de données dans laquelle un compte utilisateur a été créé. Elle constitue une composante de l'identité de l'utilisateur : MongoDB identifie un compte par le couple <code>(username, authenticationDatabase)</code>.
+</div>
+
+<p>
+  Lors de la connexion, le client doit indiquer la base d'authentification. Cette information peut être transmise de deux manières :
+</p>
+
+<pre><code><span class="code-comment"># Méthode 1 : dans l'URI de connexion (après le dernier /)</span>
+mongosh "mongodb://adminSoc:Passw0rd_S3cure!@localhost:27017/admin"
+<span class="code-comment">#                                                        ^^^^^</span>
+<span class="code-comment">#                                         authenticationDatabase = admin</span>
+
+<span class="code-comment"># Méthode 2 : avec le paramètre --authenticationDatabase</span>
+mongosh "mongodb://localhost:27017" \
+  -u adminSoc \
+  -p "Passw0rd_S3cure!" \
+  --authenticationDatabase admin</code></pre>
+
+<p>
+  Si la base d'authentification n'est pas spécifiée, <code>mongosh</code> utilise par défaut la base indiquée dans l'URI (ou <code>test</code> si aucune n'est indiquée). Si le compte n'existe pas dans cette base, l'authentification échoue avec le message <code>Authentication failed</code> — même si le mot de passe est correct.
+</p>
+
+<div class="box box-piege">
+  <span class="box-title">Piège fréquent — Oublier la base d'authentification</span>
+  <p>
+    L'erreur la plus courante pour un débutant est de tenter la connexion suivante :
+  </p>
+<pre><code><span class="code-comment"># ❌ Erreur : authenticationDatabase implicite = "test" (par défaut)</span>
+mongosh "mongodb://adminSoc:Passw0rd_S3cure!@localhost:27017"</code></pre>
+  <p>
+    Le compte <code>adminSoc</code> a été créé dans la base <code>admin</code>. Sans spécifier <code>/admin</code> dans l'URI, le client tente de s'authentifier contre la base <code>test</code>, où ce compte n'existe pas. L'authentification échoue systématiquement. Le message d'erreur <code>Authentication failed</code> ne précise pas la cause exacte, ce qui rend le diagnostic difficile pour un débutant.
+  </p>
+  <p><strong>Impact sécurité :</strong> ce n'est pas une faille de sécurité en soi, mais cette confusion conduit fréquemment les développeurs frustrés à désactiver l'authentification « pour que ça marche », ce qui crée une véritable faille.</p>
+</div>
+
+<div class="box box-exemple">
+  <span class="box-title">Exemple commenté — Comptes dans des bases différentes</span>
+<pre><code><span class="code-comment"># Connexion en tant qu'admin</span>
+mongosh "mongodb://adminSoc:Passw0rd_S3cure!@localhost:27017/admin"
+
+<span class="code-comment"># Créer un utilisateur dans la base soc_lite (pas dans admin)</span>
+use soc_lite
+db.createUser({
+  user: "soc_app",
+  pwd: "AppP@ss2024!",
+  roles: [
+    { role: "readWrite", db: "soc_lite" }
+  ]
+})
+
+<span class="code-comment"># Ce compte doit s'authentifier avec authDB = soc_lite</span>
+<span class="code-comment"># ✅ Correct :</span>
+<span class="code-comment"># mongosh "mongodb://soc_app:AppP@ss2024!@localhost:27017/soc_lite"</span>
+
+<span class="code-comment"># ❌ Échouera (authDB implicite = admin ou test) :</span>
+<span class="code-comment"># mongosh "mongodb://soc_app:AppP@ss2024!@localhost:27017/admin"</span></code></pre>
+  <p>
+    <strong>Ligne 5 :</strong> la commande <code>use soc_lite</code> positionne le contexte sur la base <code>soc_lite</code>. La commande <code>createUser</code> qui suit crée le compte <strong>dans cette base</strong>.<br>
+    <strong>Lignes 6–11 :</strong> l'utilisateur <code>soc_app</code> est créé avec le rôle <code>readWrite</code> limité à la base <code>soc_lite</code>. Il ne peut ni administrer le serveur, ni accéder à d'autres bases.<br>
+    <strong>Ligne 15 :</strong> lors de la connexion, l'URI se termine par <code>/soc_lite</code> car c'est la base d'authentification de ce compte.<br>
+    <strong>Ligne 18 :</strong> une tentative avec <code>/admin</code> échoue car le compte n'existe pas dans <code>admin</code>.
+  </p>
+</div>
+
+<div class="box box-checkpoint">
+  <span class="box-title">Question de compréhension</span>
+  <p><strong>Q :</strong> Un utilisateur <code>analyst</code> est créé dans la base <code>admin</code> avec le rôle <code>read</code> sur <code>soc_lite</code>. Quelle URI de connexion est correcte ?</p>
+  <p><strong>A)</strong> <code>mongodb://analyst:pass@localhost:27017/soc_lite</code></p>
+  <p><strong>B)</strong> <code>mongodb://analyst:pass@localhost:27017/admin</code></p>
+  <p><strong>Réponse :</strong> <strong>B</strong>. La base d'authentification est <code>admin</code> (c'est la base dans laquelle le compte a été créé, via <code>use admin; db.createUser(...)</code>). Le rôle <code>read</code> sur <code>soc_lite</code> définit les <em>permissions</em>, pas la base d'authentification. Après connexion via l'URI B, l'utilisateur pourra faire <code>use soc_lite</code> et lire les données.</p>
+</div>
+
+<!-- 2.5 Activité 2 -->
+<h2 id="p2-activite2">2.5 Activité 2 — Activer l'authentification et créer l'administrateur</h2>
+
+<div class="box box-activite">
+  <span class="box-title">Activité 2 — Authentification et preuve de refus</span>
+  <p><strong>Objectif :</strong> mettre en place l'authentification sur MongoDB, vérifier qu'une connexion sans identifiants est refusée, et se connecter correctement en tant qu'administrateur.</p>
+  <p><strong>Durée estimée :</strong> 20 minutes</p>
+  <p><strong>Prérequis :</strong> avoir terminé l'activité 1 (le conteneur <code>mongo_secure</code> doit être en cours d'exécution avec l'admin <code>adminSoc</code>). Sinon, relancer :</p>
+<pre><code>docker rm -f mongo_secure 2>/dev/null
+docker run -d --name mongo_secure \
+  -p 127.0.0.1:27017:27017 \
+  -e MONGO_INITDB_ROOT_USERNAME=adminSoc \
+  -e MONGO_INITDB_ROOT_PASSWORD=Passw0rd_S3cure! \
+  mongo:7</code></pre>
+
+  <h4>Étape 1 — Vérifier le refus d'accès anonyme</h4>
+<pre><code>mongosh "mongodb://localhost:27017"
+
+<span class="code-comment"># Tenter de lister les bases</span>
+show dbs
+<span class="code-comment"># → MongoServerError: command listDatabases requires authentication</span>
+
+<span class="code-comment"># Tenter de lire une collection</span>
+use soc_lite
+db.security_logs.find()
+<span class="code-comment"># → MongoServerError: command find requires authentication</span></code></pre>
+  <p><strong>🔴 Preuve :</strong> capturer les deux messages d'erreur.</p>
+
+  <h4>Étape 2 — Se connecter en tant qu'administrateur</h4>
+<pre><code><span class="code-comment"># Quitter la session anonyme</span>
+quit()
+
+<span class="code-comment"># Connexion authentifiée</span>
+mongosh "mongodb://adminSoc:Passw0rd_S3cure!@localhost:27017/admin"</code></pre>
+
+  <h4>Étape 3 — Vérifier les droits de l'admin</h4>
+<pre><code><span class="code-comment"># Lister les bases</span>
+show dbs
+
+<span class="code-comment"># Lister les utilisateurs de la base admin</span>
+use admin
+db.getUsers()
+
+<span class="code-comment"># Insérer des données de test dans soc_lite</span>
+use soc_lite
+db.security_logs.insertOne({
+  timestamp: new Date(),
+  source_ip: "192.168.1.50",
+  event_type: "auth_success",
+  message: "Connexion admin vérifiée",
+  severity: "info"
+})
+
+db.security_logs.find({ event_type: "auth_success" })</code></pre>
+  <p><strong>🔴 Preuve :</strong> capturer la sortie de <code>db.getUsers()</code> et la confirmation d'insertion.</p>
+
+  <h4>Étape 4 — Vérifier l'authenticationDatabase</h4>
+<pre><code><span class="code-comment"># Quitter</span>
+quit()
+
+<span class="code-comment"># ❌ Tentative avec la mauvaise authDB</span>
+mongosh "mongodb://adminSoc:Passw0rd_S3cure!@localhost:27017/soc_lite"
+<span class="code-comment"># → MongoServerError: Authentication failed</span>
+
+<span class="code-comment"># ✅ Tentative avec la bonne authDB</span>
+mongosh "mongodb://adminSoc:Passw0rd_S3cure!@localhost:27017/admin"
+<span class="code-comment"># → Connexion réussie</span></code></pre>
+  <p><strong>🔴 Preuve :</strong> capturer l'erreur avec <code>/soc_lite</code> et le succès avec <code>/admin</code>.</p>
+
+  <h4>Auto-check</h4>
+  <ol>
+    <li>La connexion anonyme a-t-elle bien été refusée ? (oui / non)</li>
+    <li>La commande <code>db.getUsers()</code> a-t-elle affiché le compte <code>adminSoc</code> avec le rôle <code>root</code> ? (oui / non)</li>
+    <li>L'authentification avec <code>/soc_lite</code> a-t-elle échoué alors que celle avec <code>/admin</code> a réussi ? (oui / non)</li>
+  </ol>
+  <p>Si les trois réponses sont « oui », l'activité est validée.</p>
+</div>
+
+<div class="box box-depannage">
+  <span class="box-title">Dépannage — Activité 2</span>
+  <table>
+    <thead><tr><th>Symptôme</th><th>Cause probable</th><th>Solution</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>La connexion anonyme fonctionne (pas d'erreur)</td>
+        <td>Les variables d'environnement n'ont pas été prises en compte (conteneur déjà initialisé avec un volume existant)</td>
+        <td><code>docker rm -f mongo_secure</code>, supprimer le volume (<code>docker volume prune</code>), relancer</td>
+      </tr>
+      <tr>
+        <td><code>Authentication failed</code> même avec les bons identifiants</td>
+        <td>Mot de passe contenant des caractères spéciaux mal interprétés par le shell</td>
+        <td>Entourer l'URI de guillemets simples : <code>mongosh 'mongodb://adminSoc:Passw0rd_S3cure!@localhost:27017/admin'</code></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 2.6 Checkpoint 2 -->
+<h2 id="p2-checkpoint2">2.6 Checkpoint 2</h2>
+
+<div class="box box-checkpoint">
+  <span class="box-title">Checkpoint 2 — Vérification des acquis</span>
+
+  <p><strong>Question 1 :</strong> Qu'est-ce que la <em>localhost exception</em> dans MongoDB ?</p>
+  <p><strong>Réponse attendue :</strong> C'est un mécanisme qui permet, lorsque l'authentification est activée mais qu'aucun utilisateur n'existe encore, de se connecter depuis localhost sans identifiants pour créer le premier administrateur. Une fois un utilisateur créé, cette exception se désactive automatiquement.</p>
+
+  <p><strong>Question 2 :</strong> Expliquer en une phrase pourquoi SCRAM est préférable à l'envoi du mot de passe en clair.</p>
+  <p><strong>Réponse attendue :</strong> SCRAM utilise un mécanisme de défi-réponse avec hachage salé, de sorte que le mot de passe n'est jamais transmis sur le réseau, ce qui protège contre l'interception (sniffing) et les attaques par rejeu.</p>
+
+  <p><strong>Question 3 :</strong> Un développeur crée le compte <code>dev_user</code> dans la base <code>myapp</code>. Il tente ensuite de se connecter avec l'URI <code>mongodb://dev_user:pass@localhost:27017</code> (sans préciser de base dans l'URI). Que se passe-t-il et pourquoi ?</p>
+  <p><strong>Réponse attendue :</strong> L'authentification échoue. Sans base dans l'URI, <code>mongosh</code> utilise <code>test</code> comme base d'authentification par défaut. Le compte <code>dev_user</code> n'existe pas dans <code>test</code> (il est dans <code>myapp</code>), donc MongoDB refuse la connexion. L'URI correcte est <code>mongodb://dev_user:pass@localhost:27017/myapp</code>.</p>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ============================================================
+     PARTIE 3 — RBAC
+     ============================================================ -->
+     <h1 id="partie3">Partie 3 — RBAC : moindre privilège et séparation des comptes</h1>
+
+     <!-- 3.1 -->
+     <h2 id="p3-concepts">3.1 Principe du moindre privilège</h2>
+     
+     <div class="box box-definition">
+       <span class="box-title">Définition — Principe du moindre privilège (<em>Least Privilege</em>)</span>
+       Le principe du moindre privilège stipule que chaque utilisateur, processus ou programme ne doit disposer que des droits strictement nécessaires à l'accomplissement de sa tâche, et aucun droit suppl��mentaire. Tout privilège excédentaire augmente la surface d'attaque.
+     </div>
+     
+     <p>
+       Ce principe, formalisé par Jerome Saltzer en 1974, est l'un des fondements de la sécurité informatique. Appliqué aux bases de données, il implique que chaque compte technique ou humain ne doit pouvoir accéder qu'aux collections et aux opérations dont il a besoin. Un analyste SOC qui consulte des journaux n'a pas besoin de pouvoir les modifier. Une application qui écrit des logs n'a pas besoin de pouvoir administrer le serveur.
+     </p>
+     
+     <p>
+       <strong>Conséquences pratiques :</strong> au lieu de créer un unique compte « fourre-tout » avec le rôle <code>root</code> utilisé par tous les acteurs (application, analystes, managers, scripts), on crée des comptes séparés avec des rôles précis. Si un compte est compromis (mot de passe divulgué, session volée), les dégâts sont limités au périmètre de ses droits.
+     </p>
+     
+     <p>
+       <strong>Analogie concrète :</strong> dans un bâtiment sécurisé, chaque employé reçoit un badge donnant accès uniquement aux zones nécessaires à son travail. Le technicien de maintenance accède aux locaux techniques mais pas à la salle des coffres. Le caissier accède à la salle des coffres mais pas aux serveurs informatiques. Si un badge est volé, seules les zones autorisées par ce badge sont compromises, et non l'ensemble du bâtiment.
+     </p>
+     
+     <p>
+       MongoDB implémente ce principe via un système de <strong>RBAC</strong> (<em>Role-Based Access Control</em> — contrôle d'accès basé sur les rôles). Chaque utilisateur se voit attribuer un ou plusieurs rôles, et chaque rôle définit un ensemble de <strong>privilèges</strong> (combinaison d'une <strong>ressource</strong> et d'une <strong>action</strong>).
+     </p>
+     
+     <div class="box box-securite">
+       <span class="box-title">Impact sécurité — Compte unique vs comptes séparés</span>
+       <p>
+         Considérons un scénario dans lequel un seul compte <code>root</code> est utilisé par l'application web, les scripts d'analyse et les managers. Si les identifiants de ce compte fuitent (par exemple, codés en dur dans un fichier <code>docker-compose.yml</code> versionnné sur un dépôt public), l'attaquant obtient un accès <strong>administrateur total</strong> : lecture de toutes les données, suppression, modification de la configuration, création de nouveaux comptes, voire exécution de commandes système dans certaines configurations. Avec des comptes séparés, la fuite du mot de passe du compte <code>soc_analyst_ro</code> ne compromet que la lecture de certaines collections — les données restent intègres et le serveur n'est pas administrable.
+       </p>
+     </div>
+     
+     <!-- 3.2 -->
+     <h2 id="p3-roles">3.2 Rôles built-in et rôles personnalisés</h2>
+     
+     <div class="box box-definition">
+       <span class="box-title">Définition — Rôle MongoDB</span>
+       Un rôle est un ensemble nommé de privilèges. Un privilège associe une <strong>ressource</strong> (base de données, collection, ou cluster) à une ou plusieurs <strong>actions</strong> (find, insert, update, remove, createCollection, dropDatabase, etc.). Les rôles peuvent être <em>built-in</em> (prédéfinis par MongoDB) ou <em>user-defined</em> (personnalisés).
+     </div>
+     
+     <p>
+       MongoDB fournit un ensemble de rôles prédéfinis couvrant les cas d'usage courants. Les plus importants pour cette séance sont présentés dans le tableau suivant :
+     </p>
+     
+     <table>
+       <thead>
+         <tr>
+           <th>Rôle built-in</th>
+           <th>Périmètre</th>
+           <th>Actions principales autorisées</th>
+           <th>Cas d'usage</th>
+         </tr>
+       </thead>
+       <tbody>
+         <tr>
+           <td><code>read</code></td>
+           <td>Une base de données</td>
+           <td><code>find</code>, <code>listCollections</code>, <code>listIndexes</code></td>
+           <td>Consultation en lecture seule (analyste, reporting)</td>
+         </tr>
+         <tr>
+           <td><code>readWrite</code></td>
+           <td>Une base de données</td>
+           <td><code>find</code>, <code>insert</code>, <code>update</code>, <code>remove</code>, <code>createCollection</code>, <code>createIndex</code></td>
+           <td>Application qui lit et écrit des données</td>
+         </tr>
+         <tr>
+           <td><code>dbAdmin</code></td>
+           <td>Une base de données</td>
+           <td>Gestion des index, statistiques, validation, compactage</td>
+           <td>Administration de la structure d'une base (sans lire les données)</td>
+         </tr>
+         <tr>
+           <td><code>userAdmin</code></td>
+           <td>Une base de données</td>
+           <td>Création et gestion des utilisateurs et rôles</td>
+           <td>Gestion des comptes sur une base spécifique</td>
+         </tr>
+         <tr>
+           <td><code>readAnyDatabase</code></td>
+           <td>Toutes les bases</td>
+           <td><code>find</code> sur toutes les bases</td>
+           <td>Monitoring, audit global</td>
+         </tr>
+         <tr>
+           <td><code>root</code></td>
+           <td>Cluster entier</td>
+           <td>Toutes les actions sur toutes les ressources</td>
+           <td>Administration complète (à utiliser avec parcimonie)</td>
+         </tr>
+       </tbody>
+     </table>
+     
+     <p>
+       Les rôles built-in sont pratiques mais parfois trop larges. Par exemple, le rôle <code>readWrite</code> sur <code>soc_lite</code> donne accès en lecture/écriture à <strong>toutes</strong> les collections de cette base. Si un compte ne doit écrire que dans <code>incidents</code> et pas dans <code>security_logs</code>, un rôle built-in ne suffit pas. Il faut alors créer un <strong>rôle personnalisé</strong> (<em>user-defined role</em>).
+     </p>
+     
+     <h4>Création d'un rôle personnalisé — Syntaxe générale</h4>
+     
+     <pre><code><span class="code-comment"># Connexion en tant qu'admin</span>
+     mongosh "mongodb://adminSoc:Passw0rd_S3cure!@localhost:27017/admin"
+     
+     <span class="code-comment"># Se positionner sur la base où le rôle sera défini</span>
+     use soc_lite
+     
+     <span class="code-comment"># Créer un rôle personnalisé</span>
+     db.createRole({
+       role: "incidentManager",          <span class="code-comment">// Nom du rôle</span>
+       privileges: [
+         {
+           resource: { db: "soc_lite", collection: "incidents" },
+           actions: ["find", "insert", "update", "remove"]
+         }
+         <span class="code-comment">// Aucun accès aux autres collections</span>
+       ],
+       roles: []                          <span class="code-comment">// Pas d'héritage d'autres rôles</span>
+     })</code></pre>
+     
+     <p>
+       <strong>Ligne 8 :</strong> la commande <code>db.createRole()</code> est exécutée dans le contexte de la base <code>soc_lite</code>. Le rôle est donc défini dans cette base.<br>
+       <strong>Lignes 10–14 :</strong> le tableau <code>privileges</code> définit précisément les ressources et actions autorisées. Ici, seules les opérations <code>find</code>, <code>insert</code>, <code>update</code> et <code>remove</code> sont autorisées, et uniquement sur la collection <code>incidents</code>.<br>
+       <strong>Ligne 16 :</strong> le champ <code>roles: []</code> signifie que ce rôle ne hérite d'aucun autre rôle. On peut aussi composer des rôles en incluant des rôles existants dans ce tableau.
+     </p>
+     
+     <div class="box box-piege">
+       <span class="box-title">Piège fréquent — Confondre « base du rôle » et « base de la ressource »</span>
+       <p>
+         Un rôle est <em>défini</em> dans une base de données (celle dans laquelle on exécute <code>db.createRole()</code>). Mais les privilèges qu'il accorde peuvent porter sur <em>n'importe quelle</em> base et collection, via le champ <code>resource</code>. Il ne faut pas confondre la base de définition du rôle avec la base sur laquelle il accorde des droits. En pratique, il est recommandé de définir les rôles personnalisés dans la même base que les données qu'ils protègent, pour plus de lisibilité.
+       </p>
+       <p><strong>Impact sécurité :</strong> une confusion sur le périmètre d'un rôle peut conduire à accorder des droits sur la mauvaise base ou la mauvaise collection, violant le principe du moindre privilège.</p>
+     </div>
+     
+     <!-- 3.3 Politique RBAC SOC-lite -->
+     <h2 id="p3-politique">3.3 Politique RBAC pour la base SOC-lite</h2>
+     
+     <p>
+       La base <code>soc_lite</code> contient trois collections avec des niveaux de sensibilité différents :
+     </p>
+     <ul>
+       <li><code>security_logs</code> : journaux de sécurité bruts. Écrits par l'application de collecte, consultés par les analystes. Intégrité critique (les logs ne doivent pas être modifiés après écriture).</li>
+       <li><code>incidents</code> : fiches d'incidents créées et mises à jour par les analystes et les managers. Confidentialité et intégrité importantes.</li>
+       <li><code>users</code> : informations sur les utilisateurs du SI surveillé. Données personnelles, accès restreint.</li>
+     </ul>
+     
+     <p>
+       La politique RBAC suivante respecte le principe du moindre privilège en définissant quatre profils distincts :
+     </p>
+     
+     <table>
+       <thead>
+         <tr>
+           <th>Compte</th>
+           <th>Profil métier</th>
+           <th>security_logs</th>
+           <th>incidents</th>
+           <th>users</th>
+           <th>Admin serveur</th>
+         </tr>
+       </thead>
+       <tbody>
+         <tr>
+           <td><code>adminSoc</code></td>
+           <td>Administrateur BD</td>
+           <td>R/W</td>
+           <td>R/W</td>
+           <td>R/W</td>
+           <td>✅ Oui (root)</td>
+         </tr>
+         <tr>
+           <td><code>soc_app</code></td>
+           <td>Application de collecte</td>
+           <td><strong>R/W</strong></td>
+           <td><strong>R/W</strong></td>
+           <td>❌ Aucun</td>
+           <td>❌ Non</td>
+         </tr>
+         <tr>
+           <td><code>soc_analyst_ro</code></td>
+           <td>Analyste SOC (lecture)</td>
+           <td><strong>Read</strong></td>
+           <td><strong>Read</strong></td>
+           <td>❌ Aucun</td>
+           <td>❌ Non</td>
+         </tr>
+         <tr>
+           <td><code>soc_manager</code></td>
+           <td>Responsable incidents</td>
+           <td>❌ Aucun</td>
+           <td><strong>R/W</strong></td>
+           <td>❌ Aucun</td>
+           <td>❌ Non</td>
+         </tr>
+       </tbody>
+     </table>
+     
+     <p>
+       <strong>Justification de chaque profil :</strong>
+     </p>
+     <ul>
+       <li><strong><code>soc_app</code></strong> est le compte utilisé par l'application de collecte. Elle doit écrire les journaux entrants dans <code>security_logs</code> et créer/mettre à jour des incidents dans <code>incidents</code>. Elle n'a aucun besoin d'accéder aux données utilisateurs ni d'administrer le serveur.</li>
+       <li><strong><code>soc_analyst_ro</code></strong> est le compte d'un analyste SOC de niveau 1. Il consulte les journaux et les incidents pour ses investigations, mais ne doit pas pouvoir les modifier (principe d'intégrité des preuves). Il n'accède pas à la collection <code>users</code>.</li>
+       <li><strong><code>soc_manager</code></strong> est le compte du responsable qui gère le cycle de vie des incidents (création, mise à jour du statut, clôture). Il n'a pas besoin d'accéder aux logs bruts (les analystes les synthétisent dans les incidents) ni aux données utilisateurs.</li>
+     </ul>
+     
+     <div class="box box-securite">
+       <span class="box-title">Pourquoi la collection <code>users</code> n'est accessible à aucun compte applicatif ?</span>
+       <p>
+         La collection <code>users</code> contient des informations personnelles sur les utilisateurs du système d'information surveillé (noms, adresses email, identifiants). Conformément aux principes de minimisation des données (RGPD, principe du moindre privilège), seul l'administrateur doit y accéder directement. Si l'application ou les analystes ont besoin de résoudre un identifiant utilisateur, un mécanisme applicatif dédié (API, vue, agrégation contrôlée) doit être mis en place plutôt qu'un accès direct à la collection.
+       </p>
+     </div>
+     
+     <!-- 3.4 Figure 2 -->
+     <h2 id="p3-fig2">3.4 Figure 2 — Diagramme RBAC : utilisateurs → rôles → collections</h2>
+     
+     <figure>
+     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif">
+       <defs>
+         <marker id="arrowBlue" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+           <polygon points="0 0, 10 3.5, 0 7" fill="#2471a3"/>
+         </marker>
+         <marker id="arrowDark" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+           <polygon points="0 0, 10 3.5, 0 7" fill="#2c3e50"/>
+         </marker>
+         <marker id="arrowOrange" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+           <polygon points="0 0, 10 3.5, 0 7" fill="#e67e22"/>
+         </marker>
+         <marker id="arrowTeal" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+           <polygon points="0 0, 10 3.5, 0 7" fill="#148f77"/>
+         </marker>
+       </defs>
+     
+       <!-- Column headers -->
+       <text x="90" y="30" text-anchor="middle" font-size="15" font-weight="700" fill="#2c3e50">Utilisateurs</text>
+       <text x="360" y="30" text-anchor="middle" font-size="15" font-weight="700" fill="#2c3e50">Rôles</text>
+       <text x="620" y="30" text-anchor="middle" font-size="15" font-weight="700" fill="#2c3e50">Collections</text>
+       <text x="810" y="30" text-anchor="middle" font-size="15" font-weight="700" fill="#2c3e50">Actions</text>
+     
+       <!-- Users -->
+       <rect x="20" y="60" width="140" height="44" rx="8" fill="#d6eaf8" stroke="#2471a3" stroke-width="2"/>
+       <text x="90" y="87" text-anchor="middle" font-size="13" font-weight="600" fill="#2471a3">soc_app</text>
+     
+       <rect x="20" y="150" width="140" height="44" rx="8" fill="#d5f5e3" stroke="#148f77" stroke-width="2"/>
+       <text x="90" y="177" text-anchor="middle" font-size="13" font-weight="600" fill="#148f77">soc_analyst_ro</text>
+     
+       <rect x="20" y="240" width="140" height="44" rx="8" fill="#fdebd0" stroke="#e67e22" stroke-width="2"/>
+       <text x="90" y="267" text-anchor="middle" font-size="13" font-weight="600" fill="#e67e22">soc_manager</text>
+     
+       <rect x="20" y="350" width="140" height="44" rx="8" fill="#f2f3f4" stroke="#2c3e50" stroke-width="2"/>
+       <text x="90" y="377" text-anchor="middle" font-size="13" font-weight="600" fill="#2c3e50">adminSoc</text>
+     
+       <!-- Roles -->
+       <rect x="280" y="55" width="160" height="54" rx="8" fill="#d6eaf8" stroke="#2471a3" stroke-width="1.5"/>
+       <text x="360" y="77" text-anchor="middle" font-size="12" font-weight="600" fill="#2471a3">readWrite</text>
+       <text x="360" y="97" text-anchor="middle" font-size="10" fill="#555">(logs + incidents)</text>
+     
+       <rect x="280" y="145" width="160" height="54" rx="8" fill="#d5f5e3" stroke="#148f77" stroke-width="1.5"/>
+       <text x="360" y="167" text-anchor="middle" font-size="12" font-weight="600" fill="#148f77">read</text>
+       <text x="360" y="187" text-anchor="middle" font-size="10" fill="#555">(logs + incidents)</text>
+     
+       <rect x="280" y="235" width="160" height="54" rx="8" fill="#fdebd0" stroke="#e67e22" stroke-width="1.5"/>
+       <text x="360" y="257" text-anchor="middle" font-size="12" font-weight="600" fill="#e67e22">incidentManager</text>
+       <text x="360" y="277" text-anchor="middle" font-size="10" fill="#555">(custom: incidents R/W)</text>
+     
+       <rect x="280" y="345" width="160" height="54" rx="8" fill="#f2f3f4" stroke="#2c3e50" stroke-width="1.5"/>
+       <text x="360" y="367" text-anchor="middle" font-size="12" font-weight="600" fill="#2c3e50">root</text>
+       <text x="360" y="387" text-anchor="middle" font-size="10" fill="#555">(admin — tous droits)</text>
+     
+       <!-- Collections -->
+       <rect x="540" y="70" width="160" height="40" rx="6" fill="#fef9e7" stroke="#b7950b" stroke-width="1.5"/>
+       <text x="620" y="95" text-anchor="middle" font-size="12" font-weight="600" fill="#7d6608">security_logs</text>
+     
+       <rect x="540" y="160" width="160" height="40" rx="6" fill="#fef9e7" stroke="#b7950b" stroke-width="1.5"/>
+       <text x="620" y="185" text-anchor="middle" font-size="12" font-weight="600" fill="#7d6608">incidents</text>
+     
+       <rect x="540" y="250" width="160" height="40" rx="6" fill="#f9ebea" stroke="#c0392b" stroke-width="1.5"/>
+       <text x="620" y="275" text-anchor="middle" font-size="12" font-weight="600" fill="#c0392b">users 🔒</text>
+     
+       <!-- Actions -->
+       <rect x="740" y="60" width="140" height="30" rx="4" fill="#eaf2f8" stroke="#2471a3" stroke-width="1"/>
+       <text x="810" y="80" text-anchor="middle" font-size="11" fill="#2471a3">find, insert</text>
+       <rect x="740" y="95" width="140" height="30" rx="4" fill="#eaf2f8" stroke="#2471a3" stroke-width="1"/>
+       <text x="810" y="115" text-anchor="middle" font-size="11" fill="#2471a3">update, remove</text>
+     
+       <rect x="740" y="155" width="140" height="30" rx="4" fill="#d5f5e3" stroke="#148f77" stroke-width="1"/>
+       <text x="810" y="175" text-anchor="middle" font-size="11" fill="#148f77">find (uniquement)</text>
+     
+       <rect x="740" y="235" width="140" height="30" rx="4" fill="#fdebd0" stroke="#e67e22" stroke-width="1"/>
+       <text x="810" y="255" text-anchor="middle" font-size="11" fill="#e67e22">find, insert</text>
+       <rect x="740" y="270" width="140" height="30" rx="4" fill="#fdebd0" stroke="#e67e22" stroke-width="1"/>
+       <text x="810" y="290" text-anchor="middle" font-size="11" fill="#e67e22">update, remove</text>
+     
+       <!-- Arrows: Users → Roles -->
+       <line x1="160" y1="82" x2="278" y2="82" stroke="#2471a3" stroke-width="2" marker-end="url(#arrowBlue)"/>
+       <line x1="160" y1="172" x2="278" y2="172" stroke="#148f77" stroke-width="2" marker-end="url(#arrowTeal)"/>
+       <line x1="160" y1="262" x2="278" y2="262" stroke="#e67e22" stroke-width="2" marker-end="url(#arrowOrange)"/>
+       <line x1="160" y1="372" x2="278" y2="372" stroke="#2c3e50" stroke-width="2" marker-end="url(#arrowDark)"/>
+     
+       <!-- Arrows: Roles → Collections -->
+       <!-- soc_app (readWrite) → logs & incidents -->
+       <line x1="440" y1="75" x2="538" y2="88" stroke="#2471a3" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+       <line x1="440" y1="88" x2="538" y2="178" stroke="#2471a3" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+     
+       <!-- soc_analyst_ro (read) → logs & incidents -->
+       <line x1="440" y1="165" x2="538" y2="92" stroke="#148f77" stroke-width="1.5" marker-end="url(#arrowTeal)"/>
+       <line x1="440" y1="178" x2="538" y2="178" stroke="#148f77" stroke-width="1.5" marker-end="url(#arrowTeal)"/>
+     
+       <!-- soc_manager (custom) → incidents only -->
+       <line x1="440" y1="262" x2="538" y2="180" stroke="#e67e22" stroke-width="1.5" marker-end="url(#arrowOrange)"/>
+     
+       <!-- Collections → Actions -->
+       <line x1="700" y1="90" x2="738" y2="75" stroke="#aaa" stroke-width="1" marker-end="url(#arrowDark)"/>
+       <line x1="700" y1="180" x2="738" y2="170" stroke="#aaa" stroke-width="1" marker-end="url(#arrowDark)"/>
+     
+       <!-- No-access indicator for users collection -->
+       <text x="620" y="320" text-anchor="middle" font-size="11" fill="#c0392b">Accès réservé à adminSoc uniquement</text>
+     
+       <!-- adminSoc dotted lines to all -->
+       <line x1="440" y1="365" x2="538" y2="90" stroke="#2c3e50" stroke-width="1" stroke-dasharray="5,3"/>
+       <line x1="440" y1="370" x2="538" y2="180" stroke="#2c3e50" stroke-width="1" stroke-dasharray="5,3"/>
+       <line x1="440" y1="375" x2="538" y2="270" stroke="#2c3e50" stroke-width="1" stroke-dasharray="5,3"/>
+     
+       <!-- Legend -->
+       <rect x="20" y="440" width="860" height="65" rx="6" fill="#f8f9fa" stroke="#dee2e6" stroke-width="1"/>
+       <text x="40" y="462" font-size="12" font-weight="600" fill="#2c3e50">Légende :</text>
+       <line x1="40" y1="482" x2="80" y2="482" stroke="#2471a3" stroke-width="2"/>
+       <text x="90" y="487" font-size="11" fill="#555">Trait plein = accès autorisé</text>
+       <line x1="280" y1="482" x2="320" y2="482" stroke="#2c3e50" stroke-width="1" stroke-dasharray="5,3"/>
+       <text x="330" y="487" font-size="11" fill="#555">Trait pointillé = accès root (tous droits)</text>
+       <rect x="580" y="474" width="14" height="14" rx="2" fill="#f9ebea" stroke="#c0392b" stroke-width="1"/>
+       <text x="600" y="487" font-size="11" fill="#555">Collection à accès restreint</text>
+     </svg>
+     <figcaption>Figure 2 — Politique RBAC de la base <code>soc_lite</code> : correspondance utilisateurs → rôles → collections → actions.</figcaption>
+     </figure>
+     
+     <div class="interpretation">
+       <strong>Interprétation :</strong> La figure 2 illustre la politique RBAC conçue pour la base <code>soc_lite</code>. Chaque colonne représente un niveau d'abstraction : à gauche les comptes utilisateurs, au centre les rôles qui leur sont assignés, puis les collections sur lesquelles ces rôles octroient des droits, et enfin les actions autorisées. Le compte <code>soc_app</code> se voit attribuer un rôle <code>readWrite</code> limité aux collections <code>security_logs</code> et <code>incidents</code>, lui permettant les quatre opérations CRUD. Le compte <code>soc_analyst_ro</code> dispose du rôle <code>read</code> sur ces mêmes collections, restreint à la seule opération <code>find</code>. Le compte <code>soc_manager</code> utilise un rôle personnalisé (<code>incidentManager</code>) qui n'accorde de droits que sur la collection <code>incidents</code>. La collection <code>users</code>, représentée en rouge, n'est accessible par aucun compte applicatif — seul l'administrateur <code>adminSoc</code> (trait pointillé, rôle <code>root</code>) y a accès. Cette séparation stricte garantit que la compromission d'un compte ne permet pas d'accéder à l'ensemble des données ni d'administrer le serveur.
+     </div>
+     
+     <!-- 3.5 Activité 3 -->
+     <h2 id="p3-activite3">3.5 Activité 3 — Implémenter la politique RBAC</h2>
+     
+     <div class="box box-activite">
+       <span class="box-title">Activité 3 — Création des rôles et utilisateurs, tests autorisé/refusé</span>
+       <p><strong>Objectif :</strong> créer la politique RBAC de la figure 2, puis vérifier que chaque compte ne peut effectuer que les opérations autorisées.</p>
+       <p><strong>Durée estimée :</strong> 35 minutes</p>
+       <p><strong>Prérequis :</strong> conteneur <code>mongo_secure</code> en cours d'exécution avec le compte <code>adminSoc</code> fonctionnel (activité 2).</p>
+     
+       <h4>Étape 1 — Connexion admin et insertion de données de test</h4>
+     <pre><code><span class="code-comment"># Connexion en tant qu'admin</span>
+     mongosh "mongodb://adminSoc:Passw0rd_S3cure!@localhost:27017/admin"
+     
+     <span class="code-comment"># Insérer des données de test dans soc_lite</span>
+     use soc_lite
+     
+     <span class="code-comment"># Journaux de sécurité</span>
+     db.security_logs.insertMany([
+       {
+         timestamp: ISODate("2026-03-23T08:15:00Z"),
+         source_ip: "10.0.1.45",
+         event_type: "login_failed",
+         severity: "warning",
+         message: "Échec d'authentification SSH - utilisateur root",
+         hostname: "srv-web-01"
+       },
+       {
+         timestamp: ISODate("2026-03-23T08:15:03Z"),
+         source_ip: "10.0.1.45",
+         event_type: "login_failed",
+         severity: "warning",
+         message: "Échec d'authentification SSH - utilisateur admin",
+         hostname: "srv-web-01"
+       },
+       {
+         timestamp: ISODate("2026-03-23T08:16:30Z"),
+         source_ip: "10.0.1.45",
+         event_type: "login_success",
+         severity: "critical",
+         message: "Connexion SSH réussie après multiples échecs",
+         hostname: "srv-web-01"
+       }
+     ])
+     
+     <span class="code-comment"># Incidents</span>
+     db.incidents.insertMany([
+       {
+         incident_id: "INC-2026-0042",
+         title: "Brute-force SSH détecté sur srv-web-01",
+         severity: "high",
+         status: "open",
+         created_at: ISODate("2026-03-23T08:20:00Z"),
+         assigned_to: "analyst_dupont",
+         description: "Multiples tentatives de connexion SSH suivies d'un succès."
+       },
+       {
+         incident_id: "INC-2026-0041",
+         title: "Scan de ports depuis 192.168.5.200",
+         severity: "medium",
+         status: "investigating",
+         created_at: ISODate("2026-03-22T14:05:00Z"),
+         assigned_to: "analyst_martin",
+         description: "Scan SYN détecté sur la plage 1-1024."
+       }
+     ])
+     
+     <span class="code-comment"># Utilisateurs du SI (collection sensible)</span>
+     db.users.insertMany([
+       {
+         username: "analyst_dupont",
+         email: "dupont@entreprise.fr",
+         department: "SOC",
+         clearance_level: "confidential"
+       },
+       {
+         username: "analyst_martin",
+         email: "martin@entreprise.fr",
+         department: "SOC",
+         clearance_level: "confidential"
+       }
+     ])</code></pre>
+     
+       <h4>Étape 2 — Créer le rôle personnalisé <code>incidentManager</code></h4>
+     <pre><code><span class="code-comment"># Toujours dans la session admin, base soc_lite</span>
+     use soc_lite
+     
+     db.createRole({
+       role: "incidentManager",
+       privileges: [
+         {
+           resource: { db: "soc_lite", collection: "incidents" },
+           actions: ["find", "insert", "update", "remove"]
+         }
+       ],
+       roles: []
+     })
+     <span class="code-comment"># Résultat attendu : { ok: 1 }</span></code></pre>
+     
+       <h4>Étape 3 — Créer les trois comptes utilisateurs</h4>
+     <pre><code><span class="code-comment"># Compte soc_app : readWrite sur logs et incidents</span>
+     use soc_lite
+     db.createUser({
+       user: "soc_app",
+       pwd: "AppP@ss2026!",
+       roles: [
+         { role: "readWrite", db: "soc_lite" }
+       ]
+     })
+     
+     <span class="code-comment"># Compte soc_analyst_ro : read seul sur logs et incidents</span>
+     db.createUser({
+       user: "soc_analyst_ro",
+       pwd: "AnalystR0@2026!",
+       roles: [
+         { role: "read", db: "soc_lite" }
+       ]
+     })
+     
+     <span class="code-comment"># Compte soc_manager : rôle personnalisé incidentManager</span>
+     db.createUser({
+       user: "soc_manager",
+       pwd: "Mgr$ecure2026!",
+       roles: [
+         { role: "incidentManager", db: "soc_lite" }
+       ]
+     })</code></pre>
+     
+       <p><strong>Remarque importante :</strong> les trois comptes sont créés dans la base <code>soc_lite</code> (via <code>use soc_lite</code>). Leur base d'authentification est donc <code>soc_lite</code>. L'URI de connexion de chacun devra se terminer par <code>/soc_lite</code>.</p>
+     
+       <h4>Étape 4 — Vérifier la liste des utilisateurs</h4>
+     <pre><code><span class="code-comment"># Toujours en session admin</span>
+     use soc_lite
+     db.getUsers()
+     <span class="code-comment"># Doit afficher 3 utilisateurs : soc_app, soc_analyst_ro, soc_manager</span>
+     <span class="code-comment"># Vérifier les rôles de chacun</span></code></pre>
+       <p><strong>🔴 Preuve :</strong> copier la sortie de <code>db.getUsers()</code>.</p>
+     
+       <h4>Étape 5 — Tests autorisé / refusé pour <code>soc_analyst_ro</code></h4>
+     <pre><code><span class="code-comment"># Quitter la session admin</span>
+     quit()
+     
+     <span class="code-comment"># Connexion en tant qu'analyste</span>
+     mongosh "mongodb://soc_analyst_ro:AnalystR0@2026!@localhost:27017/soc_lite"
+     
+     <span class="code-comment"># ✅ TEST AUTORISÉ : lecture des logs</span>
+     db.security_logs.find().limit(2)
+     <span class="code-comment"># → Doit retourner des documents</span>
+     
+     <span class="code-comment"># ✅ TEST AUTORISÉ : lecture des incidents</span>
+     db.incidents.find({ severity: "high" })
+     <span class="code-comment"># → Doit retourner l'incident INC-2026-0042</span>
+     
+     <span class="code-comment"># ❌ TEST REFUSÉ : tentative d'écriture dans logs</span>
+     db.security_logs.insertOne({ event_type: "test_write", message: "tentative" })
+     <span class="code-comment"># → MongoServerError: not authorized on soc_lite to execute command insert</span>
+     
+     <span class="code-comment"># ❌ TEST REFUSÉ : tentative de suppression d'un incident</span>
+     db.incidents.deleteOne({ incident_id: "INC-2026-0042" })
+     <span class="code-comment"># → MongoServerError: not authorized ... command delete</span>
+     
+     <span class="code-comment"># ❌ TEST REFUSÉ : tentative de lecture de la collection users</span>
+     db.users.find()
+     <span class="code-comment"># → MongoServerError: not authorized ... command find</span></code></pre>
+     
+       <p><strong>🔴 Preuve :</strong> capturer les résultats des 5 tests (2 autorisés + 3 refusés).</p>
+     
+       <p><em>Note :</em> le rôle built-in <code>read</code> sur <code>soc_lite</code> accorde la lecture sur <strong>toutes</strong> les collections de cette base, y compris <code>users</code>. Pour une politique plus stricte, il faudrait créer un rôle personnalisé limitant la lecture aux seules collections <code>security_logs</code> et <code>incidents</code>. Cela est proposé en exercice complémentaire dans le devoir maison.</p>
+     
+       <h4>Étape 6 — Tests autorisé / refusé pour <code>soc_manager</code></h4>
+     <pre><code>quit()
+     
+     <span class="code-comment"># Connexion en tant que manager</span>
+     mongosh "mongodb://soc_manager:Mgr\$ecure2026!@localhost:27017/soc_lite"
+     
+     <span class="code-comment"># ✅ TEST AUTORISÉ : lecture des incidents</span>
+     db.incidents.find()
+     <span class="code-comment"># → Doit retourner les 2 incidents</span>
+     
+     <span class="code-comment"># ✅ TEST AUTORISÉ : mise à jour d'un incident</span>
+     db.incidents.updateOne(
+       { incident_id: "INC-2026-0042" },
+       { $set: { status: "investigating", assigned_to: "manager_leroy" } }
+     )
+     <span class="code-comment"># → { modifiedCount: 1 }</span>
+     
+     <span class="code-comment"># ❌ TEST REFUSÉ : lecture des logs</span>
+     db.security_logs.find().limit(1)
+     <span class="code-comment"># → MongoServerError: not authorized ... command find</span>
+     
+     <span class="code-comment"># ❌ TEST REFUSÉ : lecture de la collection users</span>
+     db.users.find()
+     <span class="code-comment"># → MongoServerError: not authorized ... command find</span>
+     
+     <span class="code-comment"># ❌ TEST REFUSÉ : tentative d'administration</span>
+     db.adminCommand({ listDatabases: 1 })
+     <span class="code-comment"># → MongoServerError: not authorized ... command listDatabases</span></code></pre>
+     
+       <p><strong>🔴 Preuve :</strong> capturer les résultats des 5 tests (2 autorisés + 3 refusés).</p>
+     
+       <h4>Étape 7 — Tests autorisé / refusé pour <code>soc_app</code></h4>
+     <pre><code>quit()
+     
+     <span class="code-comment"># Connexion en tant que l'application</span>
+     mongosh "mongodb://soc_app:AppP@ss2026!@localhost:27017/soc_lite"
+     
+     <span class="code-comment"># ✅ TEST AUTORISÉ : écriture dans logs</span>
+     db.security_logs.insertOne({
+       timestamp: new Date(),
+       source_ip: "10.0.2.100",
+       event_type: "firewall_drop",
+       severity: "info",
+       message: "Paquet TCP bloqué par règle DROP"
+     })
+     <span class="code-comment"># → { acknowledged: true, insertedId: ObjectId(...) }</span>
+     
+     <span class="code-comment"># ✅ TEST AUTORISÉ : lecture des incidents</span>
+     db.incidents.find({ status: "open" })
+     <span class="code-comment"># → Retourne les incidents ouverts</span>
+     
+     <span class="code-comment"># ❌ TEST REFUSÉ : accès aux users</span>
+     db.users.find()
+     <span class="code-comment"># → Ceci RÉUSSIT car readWrite sur soc_lite inclut toutes les collections</span>
+     <span class="code-comment"># → C'est une limitation du rôle built-in (voir remarque ci-dessous)</span>
+     
+     <span class="code-comment"># ❌ TEST REFUSÉ : tentative d'administration</span>
+     db.adminCommand({ listDatabases: 1 })
+     <span class="code-comment"># → MongoServerError: not authorized</span></code></pre>
+     
+       <div class="box box-piege">
+         <span class="box-title">Observation importante — Limitation des rôles built-in</span>
+         <p>
+           Les rôles built-in <code>read</code> et <code>readWrite</code> s'appliquent à <strong>toutes les collections</strong> d'une base de données. Ainsi, <code>soc_app</code> avec <code>readWrite</code> sur <code>soc_lite</code> peut aussi lire et écrire dans <code>users</code>, ce qui n'est pas souhaitable. Pour corriger cela, il faudrait remplacer le rôle built-in par un rôle personnalisé, comme cela a été fait pour <code>soc_manager</code>. Cette amélioration est proposée dans le devoir maison.
+         </p>
+         <p><strong>Impact sécurité :</strong> un rôle trop large viole le principe du moindre privilège. En environnement de production, il est recommandé de toujours utiliser des rôles personnalisés délimitant précisément les collections accessibles.</p>
+       </div>
+     
+       <h4>Auto-check</h4>
+       <ol>
+         <li>Le rôle personnalisé <code>incidentManager</code> a-t-il été créé avec succès ? (oui / non)</li>
+         <li>Le compte <code>soc_analyst_ro</code> peut-il lire les logs mais pas en insérer ? (oui / non)</li>
+         <li>Le compte <code>soc_manager</code> peut-il modifier un incident mais pas lire les logs ? (oui / non)</li>
+       </ol>
+       <p>Si les trois réponses sont « oui », l'activité est validée.</p>
+     </div>
+     
+     <div class="box box-depannage">
+       <span class="box-title">Dépannage — Activité 3</span>
+       <table>
+         <thead><tr><th>Symptôme</th><th>Cause probable</th><th>Solution</th></tr></thead>
+         <tbody>
+           <tr>
+             <td><code>Role already exists</code></td>
+             <td>Le rôle <code>incidentManager</code> a déjà été créé lors d'une tentative précédente</td>
+             <td><code>db.dropRole("incidentManager")</code> puis recréer</td>
+           </tr>
+           <tr>
+             <td><code>User already exists</code></td>
+             <td>L'utilisateur a déjà été créé</td>
+             <td><code>db.dropUser("soc_app")</code> puis recréer (adapter le nom)</td>
+           </tr>
+           <tr>
+             <td><code>not authorized to execute command createUser</code></td>
+             <td>La session active n'est pas celle de l'admin, ou l'admin n'a pas le rôle <code>userAdmin</code> ou <code>root</code></td>
+             <td>Se reconnecter avec <code>adminSoc</code> via l'URI correcte (<code>/admin</code>)</td>
+           </tr>
+           <tr>
+             <td>Le <code>$</code> dans le mot de passe est interprété par le shell</td>
+             <td>Le shell Bash/Zsh interprète <code>$</code> comme variable</td>
+             <td>Échapper avec <code>\$</code> ou utiliser des guillemets simples autour de l'URI entière</td>
+           </tr>
+         </tbody>
+       </table>
+     </div>
+     
+     <!-- 3.6 Checkpoint 3 -->
+     <h2 id="p3-checkpoint3">3.6 Checkpoint 3</h2>
+     
+     <div class="box box-checkpoint">
+       <span class="box-title">Checkpoint 3 — Vérification des acquis</span>
+     
+       <p><strong>Question 1 :</strong> Expliquer la différence entre un rôle built-in et un rôle personnalisé. Donner un cas concret où un rôle built-in est insuffisant.</p>
+       <p><strong>Réponse attendue :</strong> Un rôle built-in est prédéfini par MongoDB et couvre des cas d'usage génériques (ex. : <code>read</code> = lecture sur toute une base). Un rôle personnalisé est défini par l'administrateur et permet un contrôle fin, collection par collection, action par action. Cas concret : le rôle <code>readWrite</code> sur <code>soc_lite</code> donne accès à <strong>toutes</strong> les collections, y compris <code>users</code>. Si l'on veut limiter l'écriture à <code>security_logs</code> et <code>incidents</code> seulement, un rôle personnalisé est nécessaire.</p>
+     
+       <p><strong>Question 2 :</strong> Le compte <code>soc_analyst_ro</code> est compromis (mot de passe divulgué). Quelles données sont exposées ? Quelles données restent protégées ?</p>
+       <p><strong>Réponse attendue :</strong> Avec le rôle <code>read</code> sur <code>soc_lite</code>, l'attaquant peut lire toutes les collections de la base (logs, incidents, et malheureusement <code>users</code> avec le rôle built-in). En revanche, il ne peut <strong>pas</strong> modifier ni supprimer de données (l'intégrité est préservée), il ne peut pas accéder aux autres bases, et il ne peut pas administrer le serveur. Avec un rôle personnalisé plus strict (excluant <code>users</code>), les données personnelles seraient également protégées.</p>
+     
+       <p><strong>Question 3 :</strong> Pourquoi est-il déconseillé d'utiliser le compte <code>adminSoc</code> (root) pour l'application de collecte de logs en production ?</p>
+       <p><strong>Réponse attendue :</strong> Le compte <code>root</code> dispose de tous les privilèges sur toutes les bases et le cluster. Si les identifiants de ce compte fuitent (code source, logs, fichier de configuration), l'attaquant obtient un contrôle total : lecture/modification/suppression de toutes les données, création de comptes, modification de la configuration serveur. En utilisant un compte dédié (<code>soc_app</code>) avec des droits limités, la portée d'une compromission est réduite aux seules opérations de collecte.</p>
+     </div>
+     
+     <div class="page-break"></div>
+     
+     
+</table>
+
+<!-- Fin du document -->
+<hr style="border: 2px solid var(--primary); margin-top: 3rem;">
+<p style="text-align:center; color: var(--muted); font-size: .9em;">
+  <em>Fin du support de cours — Séance 3 — Hardening MongoDB</em><br>
+  Document à usage pédagogique — 2<sup>ème</sup> année Cybersécurité
+</p>
+
+</div><!-- /.container -->
+</body>
+</html>

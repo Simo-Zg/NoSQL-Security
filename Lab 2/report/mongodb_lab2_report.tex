@@ -1,0 +1,544 @@
+
+\documentclass[11pt,a4paper]{article}
+\usepackage[a4paper,margin=2.2cm]{geometry}
+\usepackage{lmodern}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage[dvipsnames,table]{xcolor}
+\usepackage{booktabs,longtable,tabularx,array}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{float}
+\usepackage{caption}
+\usepackage[most]{tcolorbox}
+\usepackage{fvextra}
+\usepackage{xurl}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=MidnightBlue,
+  urlcolor=MidnightBlue,
+  citecolor=MidnightBlue,
+  pdftitle={Rapport de réalisation --- Séance 2 MongoDB NoSQL Security},
+  pdfauthor={OpenAI}
+}
+\definecolor{Primary}{HTML}{163A70}
+\definecolor{Accent}{HTML}{E67E22}
+\definecolor{SoftBlue}{HTML}{EEF4FB}
+\definecolor{SoftOrange}{HTML}{FFF2E6}
+\definecolor{SoftGreen}{HTML}{EDF8F1}
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\textcolor{Primary}{Rapport de réalisation --- MongoDB / SOC-lite}}
+\rhead{\textcolor{Primary}{\thepage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\titleformat{\section}{\Large\bfseries\color{Primary}}{\thesection}{0.7em}{}
+\titleformat{\subsection}{\large\bfseries\color{Primary}}{\thesubsection}{0.7em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries\color{Primary}}{\thesubsubsection}{0.7em}{}
+\setlength{\headheight}{14pt}
+\setlength{\parskip}{0.55em}
+\setlength{\parindent}{0pt}
+\newtcolorbox{summarybox}{colback=SoftBlue,colframe=Primary,boxrule=0.7pt,arc=2mm,left=2mm,right=2mm,top=1.5mm,bottom=1.5mm}
+\newtcolorbox{warningbox}{colback=SoftOrange,colframe=Accent,boxrule=0.7pt,arc=2mm,left=2mm,right=2mm,top=1.5mm,bottom=1.5mm}
+\newtcolorbox{evidencebox}{colback=SoftGreen,colframe=green!50!black,boxrule=0.7pt,arc=2mm,left=2mm,right=2mm,top=1.5mm,bottom=1.5mm}
+\DefineVerbatimEnvironment{CodeBlock}{Verbatim}{
+  breaklines=true,
+  breakanywhere=true,
+  fontsize=\small,
+  frame=single,
+  rulecolor=\color{black!20},
+  numbers=none
+}
+\newcommand{\screenshot}[3]{%
+\begin{figure}[H]
+\centering
+\includegraphics[width=#1\linewidth]{#2}
+\caption{#3}
+\end{figure}
+}
+
+\begin{document}
+
+\begin{titlepage}
+\centering
+{\Huge\bfseries\color{Primary} Rapport détaillé de réalisation\par}
+\vspace{0.4cm}
+{\LARGE Module NoSQL Security --- Séance 2\par}
+\vspace{0.2cm}
+{\large Modélisation NoSQL, requêtes avancées, index et sécurité data-level\par}
+\vspace{1cm}
+
+\begin{tcolorbox}[colback=white,colframe=Primary,boxrule=0.8pt,arc=2mm,width=0.92\textwidth]
+\textbf{Objet du document.}
+Ce rapport reconstruit le travail effectivement réalisé à partir de trois sources de preuve : le support de séance en HTML, le journal complet des commandes exécutées dans \texttt{mongosh}, et l'archive de captures d'écran. L'objectif est de produire un livrable exploitable tel quel, rédigé en \LaTeX{} / \texttt{LuaLaTeX}, propre à l'impression et suffisamment détaillé pour documenter l'exécution des travaux pratiques et du devoir maison.
+\end{tcolorbox}
+
+\vfill
+
+\begin{tabular}{>{\bfseries}p{4.5cm}p{8.5cm}}
+Support pédagogique & \texttt{seance 2.html} \\
+Journal d'exécution & \texttt{Mongo-commands.txt} \\
+Preuves visuelles & \texttt{Screenhsots.zip} (64 captures) \\
+Base de travail & \texttt{soc\_lite} puis \texttt{ids\_alerts} \\
+Environnement visé & Docker + MongoDB 7 / \texttt{mongosh} \\
+Réalisateur & \texttt{Mohammed Zguioui}
+\end{tabular}
+
+\vfill
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+\section{Résumé exécutif}
+
+\begin{summarybox}
+Le corpus d'exécution montre une progression cohérente sur l'ensemble de la séance : construction du modèle \texttt{SOC-lite}, insertion des collections \texttt{users}, \texttt{security\_logs} et \texttt{incidents}, ajout de commentaires embedded, création d'un troisième incident référencé, exécution des requêtes guidées, production d'agrégations SOC, mesure d'impact des index avec \texttt{explain()}, puis mise en œuvre des premières mesures de sécurité data-level (masquage des emails et projections sûres).
+\end{summarybox}
+
+Deux erreurs initiales ont été observées avant stabilisation du modèle : une \texttt{RangeError: Maximum call stack size exceeded} et une \texttt{BSONError: Cannot convert circular structure to BSON}. Dans les deux cas, la séquence gagnante a consisté à matérialiser les curseurs MongoDB au moyen de \texttt{toArray().map(...)} avant de les réinjecter dans les documents d'incident. Une fois cette correction appliquée, les insertions et vérifications se sont déroulées normalement.
+
+Le devoir maison a également été largement exécuté : insertion du mini jeu de données \texttt{ids\_alerts}, filtres par sévérité, tri chronologique, projections minimales, agrégations par \texttt{rule\_id}, \texttt{src\_ip} et \texttt{sensor}, sélection des alertes \texttt{block}/\texttt{drop}, et requête sur les alertes critiques issues du réseau interne. La seule partie qui n'apparaît pas comme effectivement exécutée dans le journal est la création explicite des index du devoir ; elle est donc traitée dans ce rapport comme une \emph{proposition justifiée} et non comme une opération capturée.
+
+\begin{warningbox}
+\textbf{Synthèse en une phrase.}
+Les preuves montrent un travail complet sur les TPs 1 à 6, ainsi qu'une exécution opérationnelle de la partie requêtes du devoir maison, avec une bonne compréhension des notions d'embed/reference, d'agrégation, d'indexation et de minimisation des données.
+\end{warningbox}
+
+\section{Sources exploitées et méthode de reconstruction}
+
+Le présent document a été reconstitué à partir des éléments suivants :
+
+\begin{itemize}[leftmargin=1.2cm]
+\item le support \texttt{seance 2.html}, qui définit les objectifs, les TPs, la checklist sécurité et le devoir maison ;
+\item le journal \texttt{Mongo-commands.txt}, qui constitue la source principale pour la chronologie des commandes, les résultats, les messages d'erreur et les sorties de \texttt{explain()} ;
+\item l'archive \texttt{Screenhsots.zip}, utilisée comme preuve visuelle complémentaire pour illustrer les moments clés de l'exécution.
+\end{itemize}
+
+La reconstruction a suivi une logique d'audit : extraction des séquences \texttt{soc\_lite>}, regroupement par TP, comparaison avec le plan pédagogique, puis consolidation des résultats en un récit technique continu. Au total, le journal brut contient 52 séquences de commandes distinctes et l'archive d'images contient 64 captures exploitables.
+
+\subsection{Plan pédagogique reconstitué}
+
+Le support de séance structure le travail en six TPs successifs :
+
+\begin{enumerate}[leftmargin=1.2cm]
+\item TP1 --- construction du modèle \texttt{SOC-lite} ;
+\item TP2 --- incidents, commentaires et références logs ;
+\item TP3 --- requêtes guidées ;
+\item TP4 --- statistiques par agrégation ;
+\item TP5 --- index et \texttt{explain()} ;
+\item TP6 --- sur-collecte, PII et projections sûres.
+\end{enumerate}
+
+Le devoir maison ajoute un mini jeu de données \texttt{ids\_alerts}, dix requêtes d'analyse et une proposition de deux index.
+
+\section{Environnement et corpus manipulé}
+
+Le support de séance prévoit un lancement via Docker avec \texttt{mongo:7} exposé sur le port \texttt{27017}, puis une connexion par \texttt{mongosh}. Les sorties \texttt{explain()} du journal montrent un serveur MongoDB \texttt{7.0.30}, cohérent avec cette consigne.
+
+\subsection{Collections effectivement utilisées}
+
+\begin{tabularx}{\textwidth}{>{\bfseries}p{3.1cm}X}
+\toprule
+Collection & Rôle fonctionnel observé \\
+\midrule
+\texttt{users} & Référentiel des utilisateurs SOC, équipes, rôles et données de contact. \\
+\texttt{security\_logs} & Journal brut d'événements sécurité horodatés, exploité à la fois pour la corrélation et l'agrégation. \\
+\texttt{incidents} & Gestion des cas, avec commentaires embarqués et références vers des logs liés. \\
+\texttt{ids\_alerts} & Jeu de données du devoir maison dédié à des alertes IDS/IPS. \\
+\bottomrule
+\end{tabularx}
+
+\subsection{Modèle conceptuel retenu}
+
+Le fil conducteur du support est la plateforme \texttt{SOC-lite}. Le modèle mis en œuvre dans les preuves confirme les choix pédagogiques attendus :
+
+\begin{itemize}[leftmargin=1.2cm]
+\item \textbf{embed} pour les tableaux de rôles et les commentaires d'incident ;
+\item \textbf{reference} pour l'association entre incidents et logs via \texttt{related\_log\_ids} ;
+\item \textbf{append-only} pour les logs de sécurité ;
+\item début de \textbf{many-to-many} avec le champ \texttt{assigned\_analysts}.
+\end{itemize}
+
+\section{Travail réalisé pendant la séance}
+
+\subsection{TP1 --- Construction du modèle \texttt{SOC-lite}}
+
+La première phase documentée correspond à l'amorçage du modèle. La collection \texttt{users} a été insérée avec quatre comptes (\texttt{alice\_analyst}, \texttt{bob\_senior}, \texttt{charlie\_admin}, \texttt{diana\_junior}), chacun portant un nom complet, une adresse email, une équipe, un tableau de rôles et des dates de création / de dernière connexion. Cette structure respecte le pattern \emph{one-to-few} attendu pour les rôles.
+
+\screenshot{0.82}{report_assets/fig_users_insert.png}{Preuve visuelle de l'insertion de la collection \texttt{users} et retour d'acquittement MongoDB.}
+
+La collection \texttt{security\_logs} a ensuite été alimentée avec un jeu de huit événements couvrant des cas réalistes : \texttt{login\_failed}, \texttt{login\_success}, \texttt{port\_scan}, \texttt{malware\_detected} et \texttt{data\_exfiltration\_suspect}. Les champs utilisés sont conformes au support : horodatage, IP source/destination, ports, protocole, utilisateur visé, équipement émetteur, sévérité et \texttt{raw\_log}.
+
+Une première tentative d'insertion des incidents a toutefois échoué. L'idée était correcte --- récupérer les \texttt{ObjectId} des logs puis les injecter dans \texttt{related\_log\_ids} --- mais la matérialisation directe par \texttt{.map(d => d.\_id)} dans le flux d'exécution a provoqué une erreur dans l'environnement \texttt{mongosh} observé.
+
+\subsection{Correction des erreurs initiales et insertion des incidents}
+
+Deux erreurs précoces apparaissent clairement dans le journal :
+
+\begin{itemize}[leftmargin=1.2cm]
+\item \texttt{RangeError: Maximum call stack size exceeded} lors d'une première tentative d'insertion de \texttt{INC-2025-001} et \texttt{INC-2025-002} ;
+\item \texttt{BSONError: Cannot convert circular structure to BSON} lors d'une première tentative de création de \texttt{INC-2025-003}.
+\end{itemize}
+
+Le correctif réellement appliqué a consisté à \textbf{matérialiser explicitement les curseurs} avant l'insertion, selon le schéma suivant :
+
+\begin{CodeBlock}
+let logIds = db.security_logs
+  .find({ src_ip: "192.168.1.105" })
+  .toArray()
+  .map(d => d._id);
+
+let malwareLogIds = db.security_logs
+  .find({ event_type: { $in: ["malware_detected", "data_exfiltration_suspect"] } })
+  .toArray()
+  .map(d => d._id);
+\end{CodeBlock}
+
+Après cette correction, les incidents \texttt{INC-2025-001} et \texttt{INC-2025-002} ont été insérés avec succès. Le premier document implémente proprement le couplage pédagogique attendu : commentaires embarqués d'un côté, références vers les logs SSH de l'autre.
+\screenshot{0.82}{report_assets/fig_incidents_insert_1.png}{Insertion réussie des incidents après matérialisation des curseurs avec \texttt{toArray().map(...)} - 1 .}
+\screenshot{0.82}{report_assets/fig_incidents_insert_2.png}{Insertion réussie des incidents après matérialisation des curseurs avec \texttt{toArray().map(...)} - 2 .}
+
+\subsection{Vérifications de cohérence de fin de TP1}
+
+Les contrôles de cohérence exécutés ensuite confirment l'état suivant du jeu de données :
+
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+Collection & Valeur attendue & Valeur observée \\
+\midrule
+\texttt{users.countDocuments()} & 4 & 4 \\
+\texttt{security\_logs.countDocuments()} & 8 & 8 \\
+\texttt{incidents.countDocuments()} & 2 & 2 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+La lecture détaillée de \texttt{INC-2025-001} montre également que le document contient bien les trois \texttt{related\_log\_ids} issus des tentatives SSH sur \texttt{192.168.1.105}, ainsi que deux commentaires embarqués.
+
+\subsection{TP2 --- Incidents, commentaires, références et relation many-to-many}
+
+Le TP2 a été effectivement réalisé dans le bon ordre logique. D'abord, un nouveau commentaire a été ajouté à \texttt{INC-2025-001} via \texttt{\$push}, ce qui illustre le pattern \emph{embed} sur un nombre restreint d'objets enfants. La projection subséquente sur \texttt{comments} confirme la présence de trois commentaires, dont un commentaire ajouté par \texttt{diana\_junior}.
+
+Ensuite, trois nouveaux logs ont été insérés pour documenter une séquence autour du compte \texttt{charlie} : deux \texttt{login\_failed} suivis d'un événement \texttt{privilege\_escalation}. Une fois encore, la création de la liste \texttt{charlieLogIds} a été matérialisée avec \texttt{toArray().map(...)} avant insertion de l'incident \texttt{INC-2025-003}.
+
+La vérification de cohérence a été menée avec la séquence suivante : récupération de l'incident \texttt{INC-2025-003}, puis comptage des logs dont l'\texttt{ObjectId} appartient à \texttt{related\_log\_ids}. Le résultat retourné est \texttt{3}, ce qui valide la cohérence entre le document incident et les événements sources.
+
+Enfin, la dimension \emph{many-to-many} a été esquissée par l'ajout d'un tableau \texttt{assigned\_analysts} à \texttt{INC-2025-002} contenant \texttt{bob\_senior} et \texttt{alice\_analyst}. Cette étape est importante car elle montre le passage d'un simple champ d'assignation à un modèle plus souple de co-traitement de l'incident.
+
+\subsection{TP3 --- Requêtes guidées sur les logs et incidents}
+
+Huit requêtes documentées permettent de montrer la maîtrise des filtres, des fenêtres temporelles, du tri, de la pagination et des projections. Les observations principales sont résumées ci-dessous.
+
+\begin{tabularx}{\textwidth}{>{\bfseries}p{4.4cm}X}
+\toprule
+Requête exécutée & Résultat observé \\
+\midrule
+Logs critiques & Trois événements critiques sont retournés : \texttt{malware\_detected}, \texttt{data\_exfiltration\_suspect} et \texttt{privilege\_escalation}. \\
+Fenêtre 10h--12h triée & Cinq événements sont visibles entre 10:00 et 12:00, ce qui couvre les trois échecs SSH, un succès de connexion et un \texttt{port\_scan}. \\
+Projection minimale sur les \texttt{login\_failed} & La requête ne retourne que \texttt{timestamp}, \texttt{src\_ip} et \texttt{user\_attempted}, conformément au principe de minimisation. \\
+Trois logs les plus récents & Les trois résultats les plus récents sont les trois événements liés à \texttt{charlie} à 17:00 et 17:01. \\
+Filtre logique \texttt{src\_ip} ou sévérité critique & La requête mixte confirme la maîtrise des opérateurs \texttt{\$or}. \\
+Incidents actifs / investigating avec commentaires & Les incidents \texttt{INC-2025-001} et \texttt{INC-2025-002} sont restitués avec uniquement les auteurs et textes de commentaires. \\
+\bottomrule
+\end{tabularx}
+
+\subsection{TP4 --- Agrégation et lecture analytique du SOC-lite}
+
+L'étape d'agrégation est l'un des points forts du travail réalisé. Cinq pipelines ont été exécutés. Ils permettent non seulement de vérifier la syntaxe MongoDB, mais surtout de produire des indicateurs SOC directement exploitables.
+
+\screenshot{0.78}{report_assets/fig_top_ips.png}{Agrégation sur \texttt{security\_logs} : top des IP sources observées dans le jeu de données.}
+
+Les résultats les plus structurants sont les suivants :
+
+\begin{itemize}[leftmargin=1.2cm]
+\item \textbf{Top IPs sources :} \texttt{10.0.1.200} apparaît 4 fois, devant \texttt{192.168.1.105} avec 3 occurrences.
+\item \textbf{Échecs de login par utilisateur :} \texttt{charlie} totalise 3 échecs, \texttt{root} 2, \texttt{admin} 1.
+\item \textbf{Répartition des sévérités :} 5 événements \texttt{medium}, 3 \texttt{critical}, puis 1 \texttt{low}, 1 \texttt{info} et 1 \texttt{high}.
+\item \textbf{Alertes high/critical par device :} les devices \texttt{ids-sensor-02}, \texttt{siem-console}, \texttt{endpoint-pc-042} et \texttt{firewall-main} apparaissent chacun une fois.
+\item \textbf{Événements par heure le 3 mars :} la tranche \texttt{10:00} concentre 4 événements, et la tranche \texttt{17:00} en concentre 3.
+\end{itemize}
+
+Du point de vue métier, ces agrégations montrent que l'étudiant ne s'est pas limité à des filtres simples : il a utilisé \texttt{\$match}, \texttt{\$group}, \texttt{\$sort}, \texttt{\$limit} et \texttt{\$dateToString}, soit l'essentiel du pipeline présenté dans le support.
+
+\subsection{TP5 --- Index, \texttt{explain()} et comportement du planificateur}
+
+La séquence d'indexation a été exécutée de manière pédagogique et complète : mesure avant index, création d'un index simple, nouvelle mesure, ajout d'un index composé, lecture de la liste des index, puis observation du comportement du planificateur.
+
+\begin{evidencebox}
+\textbf{Avant index.} La requête \texttt{find(\{src\_ip: "192.168.1.105"\}).explain("executionStats")} retourne un plan \texttt{COLLSCAN} avec \texttt{totalDocsExamined = 11}.
+\end{evidencebox}
+
+\begin{evidencebox}
+\textbf{Après création de \texttt{src\_ip\_1}.} La même requête passe en \texttt{IXSCAN}, avec \texttt{totalKeysExamined = 3} et \texttt{totalDocsExamined = 3}.
+\end{evidencebox}
+
+\screenshot{0.70}{report_assets/fig_indexes.png}{Liste des index présents à l'issue du TP5.}
+
+Les index présents en fin de TP5 sont donc : \texttt{\_id\_}, \texttt{src\_ip\_1} et \texttt{timestamp\_1\_src\_ip\_1}.
+
+Un point particulièrement intéressant apparaît ensuite : sur la requête combinant une plage temporelle et \texttt{src\_ip}, le planificateur conserve l'index simple \texttt{src\_ip\_1} comme plan gagnant et rejette le composé dans ce jeu de données. Autrement dit, l'ajout d'un index composé \emph{n'implique pas automatiquement} qu'il sera choisi. Ce résultat illustre bien le message du support sur la \emph{prefix rule} et, plus largement, sur la nécessité de mesurer l'effet réel des index au lieu de supposer leur utilité.
+
+\subsection{TP6 --- Sur-collecte, PII et projections sûres}
+
+Le TP6 a lui aussi été exécuté de manière concrète. Il commence par la lecture d'un événement \texttt{malware\_detected}, ce qui sert d'étape d'identification des champs à sensibilité élevée, notamment \texttt{raw\_log}.
+
+Le traitement le plus important est le \textbf{masquage des emails} dans la collection \texttt{users}. Un pipeline \texttt{updateMany} a été utilisé pour créer un champ dérivé \texttt{email\_masked} au format \texttt{a***@soc.local}.
+
+\screenshot{0.80}{report_assets/fig_email_masked.png}{Contrôle visuel du masquage des emails dans \texttt{users}.}
+
+Les projections suivantes ont ensuite été exécutées :
+
+\begin{itemize}[leftmargin=1.2cm]
+\item projection \texttt{viewer} sur \texttt{users} limitée à \texttt{username}, \texttt{team}, \texttt{roles} et \texttt{email\_masked} ;
+\item exclusion explicite de \texttt{raw\_log} lors de la consultation des logs critiques par un tableau de bord viewer.
+\end{itemize}
+
+Cette phase montre une compréhension correcte de la différence entre \emph{conserver la donnée} et \emph{contrôler son exposition}. On ne supprime pas l'email ni le \texttt{raw\_log} ; on adapte ce qui est visible selon le rôle et l'usage.
+
+\section{Exécution du devoir maison}
+
+\subsection{Partie 1 --- Insertion du mini dataset \texttt{ids\_alerts}}
+
+Le mini jeu de données du devoir a bien été inséré. Il contient cinq alertes IDS/IPS réparties entre trois signatures : \texttt{SID-1001} (trois occurrences), \texttt{SID-2050} (une occurrence) et \texttt{SID-3001} (une occurrence). Les sévérités observées sont \texttt{high}, \texttt{critical} et \texttt{medium}, avec des actions \texttt{alert}, \texttt{block} et \texttt{drop}.
+
+\subsection{Partie 2 --- Requêtes du devoir et résultats observés}
+
+Le journal prouve l'exécution effective de l'ensemble des requêtes attendues pour la partie analyse. Le tableau suivant synthétise les résultats observés.
+
+\begin{longtable}{>{\bfseries}p{4.4cm}p{2.5cm}p{7.2cm}}
+\toprule
+Requête & Résultat & Observation \\
+\midrule
+\endfirsthead
+\toprule
+Requête & Résultat & Observation \\
+\midrule
+\endhead
+Alertes \texttt{high} ou \texttt{critical} & 4 documents & Trois alertes \texttt{SID-1001} de sévérité \texttt{high} et une alerte \texttt{SID-2050} de sévérité \texttt{critical}. \\
+Alertes \texttt{SID-1001} triées par temps & 3 documents & Horodatages 08:00, 08:05 et 11:00. \\
+Nombre d'alertes par \texttt{rule\_id} & 3 groupes & \texttt{SID-1001 = 3}, \texttt{SID-2050 = 1}, \texttt{SID-3001 = 1}. \\
+Fenêtre 08h--10h, projection minimale & 3 documents & Retour limité à \texttt{timestamp}, \texttt{rule\_name} et \texttt{src\_ip}. \\
+Deux alertes les plus récentes & 2 documents & 11:00 \texttt{SID-1001} puis 10:30 \texttt{SID-3001}. \\
+Top IPs sources & 3 groupes & \texttt{203.0.113.15 = 3}, \texttt{10.0.2.100 = 1}, \texttt{10.0.0.10 = 1}. \\
+Actions \texttt{block} ou \texttt{drop} & 2 documents & Une alerte bloquée DNS tunneling et une alerte drop SQL injection. \\
+Nombre d'alertes par \texttt{sensor} & 2 groupes & \texttt{ids-dmz-01 = 3}, \texttt{ids-internal-01 = 2}. \\
+Alertes critiques internes (\texttt{src\_ip} commençant par \texttt{10.}) & 1 document & L'alerte \texttt{SID-2050} (\texttt{DNS Tunneling Detected}) satisfait la condition. \\
+Alerte la plus ancienne & 1 document & \texttt{SID-1001} à 08:00. \\
+\bottomrule
+\end{longtable}
+
+\screenshot{0.62}{report_assets/fig_ids_top_srcip.png}{Agrégation du devoir maison : top des IP sources dans \texttt{ids\_alerts}.}
+\screenshot{0.62}{report_assets/fig_ids_internal_critical.png}{Requête du devoir maison : alerte critique provenant du réseau interne identifiée à l'aide de \texttt{\$substrBytes}.}
+
+\subsection{Partie 3 --- Index proposés et justifiés}
+
+Le support prévoit une troisième partie consacrée à la proposition de deux index. Or, \textbf{aucune commande \texttt{createIndex()} sur \texttt{ids\_alerts} n'apparaît dans le journal capturé}. Par honnêteté méthodologique, les éléments ci-dessous sont donc présentés comme des \textbf{propositions argumentées} destinées à compléter le rendu, et non comme des opérations effectivement exécutées.
+
+\begin{tabularx}{\textwidth}{>{\ttfamily}p{5.5cm}X}
+\toprule
+Index proposé & Justification \\
+\midrule
+\texttt{\{ rule\_id: 1, timestamp: 1 \}} & Accélère directement la requête sur \texttt{SID-1001} triée par horodatage, qui est l'un des cas d'usage centraux du devoir. Il reste également cohérent pour des investigations chronologiques par signature IDS. \\
+\texttt{\{ timestamp: 1 \}} & Couvre les recherches par fenêtre temporelle (08h--10h), ainsi que les requêtes \emph{alerte la plus ancienne} et, par inversion de parcours, \emph{alertes les plus récentes}. C'est l'index le plus universel pour un journal d'alertes horodaté. \\
+\bottomrule
+\end{tabularx}
+
+Dans un contexte de volume beaucoup plus important, une refonte de certaines requêtes permettrait d'envisager d'autres index, par exemple sur \texttt{src\_ip}. Toutefois, avec la contrainte de proposer seulement deux index et en restant fidèle aux requêtes effectivement observées, le couple ci-dessus est le plus défendable.
+
+\section{Checklist sécurité remplie à partir des preuves}
+
+La checklist du support a été complétée ci-dessous en distinguant ce qui est \emph{effectivement démontré} dans les commandes et ce qui relève d'une \emph{recommandation logique} issue du TP6.
+
+\begin{longtable}{>{\bfseries}p{5.1cm}p{2cm}p{7.0cm}}
+\toprule
+Critère & Statut & Commentaire \\
+\midrule
+\endfirsthead
+\toprule
+Critère & Statut & Commentaire \\
+\midrule
+\endhead
+Périmètre fonctionnel par collection & Fait & \texttt{users} pour les identités/équipes/rôles, \texttt{security\_logs} pour les événements bruts, \texttt{incidents} pour la gestion de cas, \texttt{ids\_alerts} pour le devoir maison. \\
+PII identifiés & Fait & Les emails des utilisateurs sont explicitement présents dans \texttt{users}. Les journaux contiennent aussi des données opérationnelles sensibles via \texttt{raw\_log}. \\
+PII masqués pour accès non privilégiés & Fait & Le champ \texttt{email\_masked} est généré pour les quatre utilisateurs. \\
+Projections définies par rôle (\texttt{viewer}/\texttt{analyst}) & Partiel & La projection \texttt{viewer} est démontrée. L'équivalent \texttt{analyst} n'est pas formalisé par une commande dédiée dans le journal. \\
+Champs haute sensibilité (\texttt{raw\_log}) & Partiel & La nécessité de restreindre \texttt{raw\_log} est démontrée par la requête d'exclusion ; l'affectation explicite à un rôle privilégié reste une recommandation de gouvernance. \\
+Dénormalisation sans duplication de PII & Fait & Les incidents répliquent des identifiants et des tags, mais pas les emails des utilisateurs. \\
+Index ne révélant pas de patterns sensibles & Fait & Les index créés portent sur \texttt{src\_ip} et \texttt{timestamp/src\_ip}; aucun index sur \texttt{user\_attempted} n'est observé. \\
+Pas de sur-collecte & Partiel & La sur-collecte potentielle est identifiée via \texttt{raw\_log}; la réduction du schéma n'est pas exécutée, mais le besoin est correctement diagnostiqué. \\
+\bottomrule
+\end{longtable}
+
+\section{Analyse critique et enseignements}
+
+Ce travail montre une progression technique crédible et cohérente. Trois enseignements majeurs se dégagent.
+
+\subsection{1. Embed/reference : compréhension correcte du compromis}
+
+La modélisation réalisée respecte bien le compromis enseigné : embarquer ce qui est borné et contextuel (commentaires, rôles), référencer ce qui peut croître sans limite ou doit être isolé (logs). Le fait d'avoir effectivement manipulé \texttt{related\_log\_ids} dans les incidents renforce la compréhension de ce choix.
+
+\subsection{2. L'indexation a été mesurée, pas supposée}
+
+La bascule de \texttt{COLLSCAN} vers \texttt{IXSCAN} prouve que l'étudiant a vérifié le comportement du moteur avec \texttt{explain()}. C'est beaucoup plus pertinent pédagogiquement que de se contenter de créer un index « au cas où ».
+
+\subsection{3. La sécurité data-level est comprise comme un problème d'exposition, pas seulement de stockage}
+
+Le masquage des emails, la projection \texttt{viewer} et l'exclusion de \texttt{raw\_log} montrent que la réflexion ne porte pas uniquement sur \emph{ce qui est stocké}, mais aussi sur \emph{ce qui est rendu visible}. C'est exactement l'objectif du dernier bloc de la séance.
+
+\section{Conclusion}
+
+Au vu des preuves disponibles, le travail de séance peut être considéré comme \textbf{largement réalisé et techniquement satisfaisant}. Les TPs 1 à 6 apparaissent dans le journal avec des résultats cohérents, et le devoir maison a été exécuté sur toute sa partie opérationnelle de requêtage. Les erreurs initiales ont été corrigées proprement, les vérifications de cohérence ont été effectuées, et les sorties observées sont globalement en ligne avec les attentes du support.
+
+Le seul élément qui n'est pas capturé comme action réalisée est la création explicite des deux index du devoir maison. Ce rapport compense ce manque en proposant deux index argumentés, tout en signalant clairement qu'il s'agit d'une complétion analytique et non d'une preuve d'exécution. Cette distinction est importante pour préserver la traçabilité du livrable.
+
+\appendix
+
+\section{Extraits représentatifs des commandes exécutées}
+
+\subsection{Erreur initiale puis correction}
+
+\begin{CodeBlock}
+// tentative initiale
+let charlieLogIds = db.security_logs.find({
+  src_ip: "10.0.1.200",
+  timestamp: { $gte: new Date("2025-03-03T17:00:00Z") }
+}).map(d => d._id)
+
+db.incidents.insertOne({
+  incident_id: "INC-2025-003",
+  related_log_ids: charlieLogIds,
+  comments: []
+})
+// BSONError: Cannot convert circular structure to BSON
+\end{CodeBlock}
+
+\begin{CodeBlock}
+// version stabilisée
+let charlieLogIds = db.security_logs
+  .find({
+    src_ip: "10.0.1.200",
+    timestamp: { $gte: new Date("2025-03-03T17:00:00Z") }
+  })
+  .toArray()
+  .map(d => d._id);
+
+db.incidents.insertOne({
+  incident_id: "INC-2025-003",
+  related_log_ids: charlieLogIds,
+  comments: []
+});
+\end{CodeBlock}
+
+\subsection{Séquence d'indexation}
+
+\begin{CodeBlock}
+db.security_logs.find({ src_ip: "192.168.1.105" }).explain("executionStats")
+db.security_logs.createIndex({ src_ip: 1 })
+db.security_logs.find({ src_ip: "192.168.1.105" }).explain("executionStats")
+db.security_logs.createIndex({ timestamp: 1, src_ip: 1 })
+db.security_logs.getIndexes()
+\end{CodeBlock}
+
+\subsection{Masquage des emails}
+
+\begin{CodeBlock}
+db.users.updateMany({}, [
+  { $set: { email_masked: {
+      $concat: [
+        { $substr: ["$email", 0, 1] },
+        "***@",
+        { $arrayElemAt: [{ $split: ["$email", "@"] }, 1] }
+      ]
+  }}}
+])
+\end{CodeBlock}
+
+\subsection{Extrait du devoir maison}
+
+\begin{CodeBlock}
+db.ids_alerts.find(
+  {
+    severity: "critical",
+    $expr: {
+      $eq: [
+        { $substrBytes: ["$src_ip", 0, 3] },
+        "10."
+      ]
+    }
+  }
+)
+\end{CodeBlock}
+
+\section{Inventaire condensé des séquences du journal}
+
+\renewcommand{\arraystretch}{1.08}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.8cm} >{\raggedright\arraybackslash}p{4.0cm} >{\raggedright\arraybackslash}p{8.9cm} >{\raggedright\arraybackslash}p{1.2cm}}
+\toprule
+\# & Phase & Action documentée & Statut \\
+\midrule
+\endfirsthead
+\toprule
+\# & Phase & Action documentée & Statut \\
+\midrule
+\endhead
+1 & Pré-tests / erreurs initiales & Première tentative d'insertion des incidents avec récupération directe des ObjectId via .map() ; échec. & Erreur \\
+2 & Pré-tests / erreurs initiales & Première tentative de création de l'incident INC-2025-003 avec récupération directe des ObjectId ; échec. & Erreur \\
+3 & TP1 --- Modèle SOC-lite & Insertion de la collection users. & OK \\
+4 & TP1 --- Modèle SOC-lite & Insertion initiale de la collection security\_logs. & OK \\
+5 & TP1 --- Modèle SOC-lite & Matérialisation de logIds via toArray().map(). & OK \\
+6 & TP1 --- Modèle SOC-lite & Insertion correcte des incidents INC-2025-001 et INC-2025-002. & OK \\
+7 & TP1 --- Modèle SOC-lite & Comptage des utilisateurs. & OK \\
+8 & TP1 --- Modèle SOC-lite & Comptage des logs de sécurité. & OK \\
+9 & TP1 --- Modèle SOC-lite & Comptage des incidents. & OK \\
+10 & TP1 --- Modèle SOC-lite & Lecture de contrôle de INC-2025-001. & OK \\
+11 & TP2 --- Incidents et références & Ajout d'un commentaire embarqué dans INC-2025-001. & OK \\
+12 & TP2 --- Incidents et références & Projection des commentaires de INC-2025-001. & OK \\
+13 & TP2 --- Incidents et références & Insertion de trois nouveaux logs liés à Charlie. & OK \\
+14 & TP2 --- Incidents et références & Création correcte de INC-2025-003 avec related\_log\_ids matérialisés. & OK \\
+15 & TP2 --- Incidents et références & Vérification du nombre de logs liés à INC-2025-003. & OK \\
+16 & TP2 --- Incidents et références & Ajout d'analystes assignés à INC-2025-002. & OK \\
+17 & TP3 --- Requêtes guidées & Recherche des logs critiques. & OK \\
+18 & TP3 --- Requêtes guidées & Recherche par fenêtre temporelle 10h--12h, tri croissant. & OK \\
+19 & TP3 --- Requêtes guidées & Projection minimale sur les échecs de connexion. & OK \\
+20 & TP3 --- Requêtes guidées & Récupération des trois logs les plus récents. & OK \\
+21 & TP3 --- Requêtes guidées & Filtre logique sur src\_ip ou sévérité critique. & OK \\
+22 & TP3 --- Requêtes guidées & Lecture des incidents actifs/en investigation avec commentaires. & OK \\
+23 & TP3 --- Requêtes guidées & Recherche des événements du device siem-console. & OK \\
+24 & TP3 --- Requêtes guidées & Incidents assignés à alice\_analyst. & OK \\
+25 & TP4 --- Agrégations & Top 5 des IP sources par agrégation. & OK \\
+26 & TP4 --- Agrégations & Échecs de connexion par utilisateur. & OK \\
+27 & TP4 --- Agrégations & Répartition des sévérités. & OK \\
+28 & TP4 --- Agrégations & Alertes high/critical par device. & OK \\
+29 & TP4 --- Agrégations & Nombre d'événements par heure. & OK \\
+30 & TP5 --- Index et explain() & Explain sans index sur src\_ip = COLLSCAN. & OK \\
+31 & TP5 --- Index et explain() & Création de l'index simple sur src\_ip. & OK \\
+32 & TP5 --- Index et explain() & Explain après index = IXSCAN. & OK \\
+33 & TP5 --- Index et explain() & Création de l'index composé \{timestamp, src\_ip\}. & OK \\
+34 & TP5 --- Index et explain() & Explain sur requête temporelle + IP. & OK \\
+35 & TP5 --- Index et explain() & Liste des index présents. & OK \\
+36 & TP5 --- Index et explain() & Explain illustrant la prefix rule / choix du planificateur. & OK \\
+37 & TP6 --- Sécurité data-level & Lecture d'un log malware pour identifier les champs sensibles. & OK \\
+38 & TP6 --- Sécurité data-level & Masquage des emails par update pipeline. & OK \\
+39 & TP6 --- Sécurité data-level & Contrôle du masquage email\_masked. & OK \\
+40 & TP6 --- Sécurité data-level & Projection sûre pour un viewer sur users. & OK \\
+41 & TP6 --- Sécurité data-level & Exclusion de raw\_log pour les viewers. & OK \\
+42 & Devoir maison --- IDS alerts & Insertion du mini jeu de données ids\_alerts. & OK \\
+43 & Devoir maison --- IDS alerts & Filtre severity high/critical. & OK \\
+44 & Devoir maison --- IDS alerts & Recherche SID-1001 triée par timestamp. & OK \\
+45 & Devoir maison --- IDS alerts & Comptage des alertes par rule\_id. & OK \\
+46 & Devoir maison --- IDS alerts & Fenêtre 08h--10h avec projection minimale. & OK \\
+47 & Devoir maison --- IDS alerts & Deux alertes les plus récentes. & OK \\
+48 & Devoir maison --- IDS alerts & Top IPs sources du devoir. & OK \\
+49 & Devoir maison --- IDS alerts & Alertes dont action = block ou drop. & OK \\
+50 & Devoir maison --- IDS alerts & Nombre d'alertes par sensor. & OK \\
+51 & Devoir maison --- IDS alerts & Alertes critiques du réseau interne via \$substrBytes. & OK \\
+52 & Devoir maison --- IDS alerts & Alerte la plus ancienne. & OK \\
+\bottomrule
+\end{longtable}
+
+\end{document}

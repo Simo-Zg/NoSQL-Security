@@ -1,0 +1,2388 @@
+soc_lite> let logIds = db.security_logs.find({ src_ip: "192.168.1.105" }).map(d => d._id)
+|
+| db.incidents.insertMany([
+|   {
+|     incident_id: "INC-2025-001",
+|     title: "Brute force SSH sur srv-web-01",
+|     description: "Multiples tentatives SSH échouées depuis 192.168.1.105 ciblant root et admin.",
+|     severity: "high", status: "investigating",
+|     created_at: new Date("2025-03-03T10:30:00Z"),
+|     updated_at: new Date("2025-03-03T11:00:00Z"),
+|     assigned_to: "alice_analyst",
+|     tags: ["brute-force", "ssh", "external"],
+|     related_log_ids: logIds,
+|     comments: [
+|       { author: "alice_analyst",
+|         text: "3 tentatives en 2s depuis la même IP. Pattern brute-force confirmé.",
+|         timestamp: new Date("2025-03-03T10:35:00Z") },
+|       { author: "bob_senior",
+|         text: "IP bloquée au firewall. Surveiller si rebond depuis un autre vecteur.",
+|         timestamp: new Date("2025-03-03T10:50:00Z") }
+|     ],
+|     mitre_tactics: ["TA0006"],
+|     mitre_techniques: ["T1110.001"]
+|   },
+|   {
+|     incident_id: "INC-2025-002",
+|     title: "Malware détecté sur endpoint-pc-042",
+|     description: "Trojan détecté dans /tmp/update.exe. Potentielle exfiltration en cours.",
+|     severity: "critical", status: "active",
+|     created_at: new Date("2025-03-03T14:30:00Z"),
+|     updated_at: new Date("2025-03-03T16:50:00Z"),
+|     assigned_to: "bob_senior",
+|     tags: ["malware", "exfiltration", "endpoint"],
+|     related_log_ids: db.security_logs.find({
+|       event_type: { $in: ["malware_detected","data_exfiltration_suspect"] }
+|     }).map(d => d._id),
+|     comments: [
+|       { author: "bob_senior",
+|         text: "Isolement réseau du poste effectué. Analyse forensique en cours.",
+|         timestamp: new Date("2025-03-03T14:45:00Z") }
+|     ],
+|     mitre_tactics: ["TA0010","TA0011"],
+|     mitre_techniques: ["T1041","T1071.001"]
+|   }
+| ])
+RangeError: Maximum call stack size exceeded
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> let charlieLogIds = db.security_logs.find({
+|   src_ip: "10.0.1.200",
+|   timestamp: { $gte: new Date("2025-03-03T17:00:00Z") }
+| }).map(d => d._id)
+|
+| db.incidents.insertOne({
+|   incident_id: "INC-2025-003",
+|   title: "Tentative d'escalade de privilèges - charlie",
+|   description: "Échecs de connexion suivis d'une tentative d'escalade depuis 10.0.1.200.",
+|   severity: "critical", status: "new",
+|   created_at: new Date(), updated_at: new Date(),
+|   assigned_to: "alice_analyst",
+|   tags: ["privilege-escalation", "internal", "account-lockout"],
+|   related_log_ids: charlieLogIds,
+|   comments: [],
+|   mitre_tactics: ["TA0004"],
+|   mitre_techniques: ["T1078"]
+| })
+BSONError: Cannot convert circular structure to BSON
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.users.insertMany([
+|   {
+|     username: "alice_analyst",
+|     full_name: "Alice Dupont",
+|     email: "alice@soc.local",
+|     roles: ["analyst", "viewer"],
+|     team: "Blue Team",
+|     created_at: new Date("2025-01-15"),
+|     last_login: new Date("2025-03-01T08:30:00Z"),
+|     is_active: true
+|   },
+|   {
+|     username: "bob_senior",
+|     full_name: "Bob Martin",
+|     email: "bob@soc.local",
+|     roles: ["senior_analyst", "incident_manager"],
+|     team: "Blue Team",
+|     created_at: new Date("2024-06-10"),
+|     last_login: new Date("2025-03-03T14:12:00Z"),
+|     is_active: true
+|   },
+|   {
+|     username: "charlie_admin",
+|     full_name: "Charlie Leroy",
+|     email: "charlie@soc.local",
+|     roles: ["admin"],
+|     team: "SOC Management",
+|     created_at: new Date("2024-01-05"),
+|     last_login: new Date("2025-02-28T18:00:00Z"),
+|     is_active: true
+|   },
+|   {
+|     username: "diana_junior",
+|     full_name: "Diana Nour",
+|     email: "diana@soc.local",
+|     roles: ["viewer"],
+|     team: "Blue Team",
+|     created_at: new Date("2025-02-01"),
+|     last_login: new Date("2025-03-03T09:00:00Z"),
+|     is_active: true
+|   }
+| ])
+{
+  acknowledged: true,
+  insertedIds: {
+    '0': ObjectId('69d26c852eaf52a8bf8563b4'),
+    '1': ObjectId('69d26c852eaf52a8bf8563b5'),
+    '2': ObjectId('69d26c852eaf52a8bf8563b6'),
+    '3': ObjectId('69d26c852eaf52a8bf8563b7')
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.security_logs.insertMany([
+|   {
+|     timestamp: new Date("2025-03-03T10:05:22Z"),
+|     event_type: "login_failed",
+|     src_ip: "192.168.1.105", dst_ip: "10.0.0.2",
+|     src_port: 44821, dst_port: 22,
+|     protocol: "SSH", user_attempted: "root",
+|     device_id: "srv-web-01", severity: "medium",
+|     raw_log: "Failed password for root from 192.168.1.105 port 44821 ssh2"
+|   },
+|   {
+|     timestamp: new Date("2025-03-03T10:05:23Z"),
+|     event_type: "login_failed",
+|     src_ip: "192.168.1.105", dst_ip: "10.0.0.2",
+|     src_port: 44822, dst_port: 22,
+|     protocol: "SSH", user_attempted: "root",
+|     device_id: "srv-web-01", severity: "medium",
+|     raw_log: "Failed password for root from 192.168.1.105 port 44822 ssh2"
+|   },
+|   {
+|     timestamp: new Date("2025-03-03T10:05:24Z"),
+|     event_type: "login_failed",
+|     src_ip: "192.168.1.105", dst_ip: "10.0.0.2",
+|     src_port: 44823, dst_port: 22,
+|     protocol: "SSH", user_attempted: "admin",
+|     device_id: "srv-web-01", severity: "medium",
+|     raw_log: "Failed password for admin from 192.168.1.105 port 44823 ssh2"
+|   },
+|   {
+|     timestamp: new Date("2025-03-03T10:12:00Z"),
+|     event_type: "login_success",
+|     src_ip: "10.0.1.50", dst_ip: "10.0.0.5",
+|     src_port: 52100, dst_port: 443,
+|     protocol: "HTTPS", user_attempted: "alice",
+|     device_id: "siem-console", severity: "info",
+|     raw_log: "Successful login for alice from 10.0.1.50"
+|   },
+|   {
+|     timestamp: new Date("2025-03-03T11:30:45Z"),
+|     event_type: "port_scan",
+|     src_ip: "172.16.0.88", dst_ip: "10.0.0.0/24",
+|     src_port: null, dst_port: null,
+|     protocol: "TCP", user_attempted: null,
+|     device_id: "ids-sensor-02", severity: "high",
+|     raw_log: "Nmap SYN scan detected from 172.16.0.88 targeting 10.0.0.0/24"
+|   },
+|   {
+|     timestamp: new Date("2025-03-03T14:22:10Z"),
+|     event_type: "malware_detected",
+|     src_ip: "192.168.2.30", dst_ip: "10.0.0.10",
+|     src_port: 80, dst_port: 8080,
+|     protocol: "HTTP", user_attempted: null,
+|     device_id: "endpoint-pc-042", severity: "critical",
+|     raw_log: "Trojan.GenericKD.46543210 detected in /tmp/update.exe"
+|   },
+|   {
+|     timestamp: new Date("2025-03-03T15:00:00Z"),
+|     event_type: "login_failed",
+|     src_ip: "10.0.1.200", dst_ip: "10.0.0.5",
+|     src_port: 61234, dst_port: 443,
+|     protocol: "HTTPS", user_attempted: "charlie",
+|     device_id: "siem-console", severity: "low",
+|     raw_log: "Failed login for charlie - wrong password"
+|   },
+|   {
+|     timestamp: new Date("2025-03-03T16:45:00Z"),
+|     event_type: "data_exfiltration_suspect",
+|     src_ip: "10.0.0.10", dst_ip: "203.0.113.50",
+|     src_port: 443, dst_port: 443,
+|     protocol: "HTTPS", user_attempted: null,
+|     device_id: "firewall-main", severity: "critical",
+|     raw_log: "Unusual outbound transfer 2.3GB to 203.0.113.50"
+|   }
+| ])
+{
+  acknowledged: true,
+  insertedIds: {
+    '0': ObjectId('69d26cc62eaf52a8bf8563b8'),
+    '1': ObjectId('69d26cc62eaf52a8bf8563b9'),
+    '2': ObjectId('69d26cc62eaf52a8bf8563ba'),
+    '3': ObjectId('69d26cc62eaf52a8bf8563bb'),
+    '4': ObjectId('69d26cc62eaf52a8bf8563bc'),
+    '5': ObjectId('69d26cc62eaf52a8bf8563bd'),
+    '6': ObjectId('69d26cc62eaf52a8bf8563be'),
+    '7': ObjectId('69d26cc62eaf52a8bf8563bf')
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> let logIds = db.security_logs
+|   .find({ src_ip: "192.168.1.105" })
+|   .toArray()
+|   .map(d => d._id);
+soc_lite> let logIds = db.security_logs
+|   .find({ src_ip: "192.168.1.105" })
+|   .toArray()
+|   .map(d => d._id);
+|
+| let malwareLogIds = db.security_logs
+|   .find({
+|     event_type: { $in: ["malware_detected", "data_exfiltration_suspect"] }
+|   })
+|   .toArray()
+|   .map(d => d._id);
+|
+| db.incidents.insertMany([
+|   {
+|     incident_id: "INC-2025-001",
+|     title: "Brute force SSH sur srv-web-01",
+|     description: "Multiples tentatives SSH échouées depuis 192.168.1.105 ciblant root et admin.",
+|     severity: "high",
+|     status: "investigating",
+|     created_at: new Date("2025-03-03T10:30:00Z"),
+|     updated_at: new Date("2025-03-03T11:00:00Z"),
+|     assigned_to: "alice_analyst",
+|     tags: ["brute-force", "ssh", "external"],
+|     related_log_ids: logIds,
+|     comments: [
+|       {
+|         author: "alice_analyst",
+|         text: "3 tentatives en 2s depuis la même IP. Pattern brute-force confirmé.",
+|         timestamp: new Date("2025-03-03T10:35:00Z")
+|       },
+|       {
+|         author: "bob_senior",
+|         text: "IP bloquée au firewall. Surveiller si rebond depuis un autre vecteur.",
+|         timestamp: new Date("2025-03-03T10:50:00Z")
+|       }
+|     ],
+|     mitre_tactics: ["TA0006"],
+|     mitre_techniques: ["T1110.001"]
+|   },
+|   {
+|     incident_id: "INC-2025-002",
+|     title: "Malware détecté sur endpoint-pc-042",
+|     description: "Trojan détecté dans /tmp/update.exe. Potentielle exfiltration en cours.",
+|     severity: "critical",
+|     status: "active",
+|     created_at: new Date("2025-03-03T14:30:00Z"),
+|     updated_at: new Date("2025-03-03T16:50:00Z"),
+|     assigned_to: "bob_senior",
+|     tags: ["malware", "exfiltration", "endpoint"],
+|     related_log_ids: malwareLogIds,
+|     comments: [
+|       {
+|         author: "bob_senior",
+|         text: "Isolement réseau du poste effectué. Analyse forensique en cours.",
+|         timestamp: new Date("2025-03-03T14:45:00Z")
+|       }
+|     ],
+|     mitre_tactics: ["TA0010", "TA0011"],
+|     mitre_techniques: ["T1041", "T1071.001"]
+|   }
+| ]);
+{
+  acknowledged: true,
+  insertedIds: {
+    '0': ObjectId('69d26d602eaf52a8bf8563c0'),
+    '1': ObjectId('69d26d602eaf52a8bf8563c1')
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.users.countDocuments()
+4
+soc_lite> db.security_logs.countDocuments()
+8
+soc_lite> db.incidents.countDocuments()
+2
+soc_lite> db.incidents.findOne({ incident_id: "INC-2025-001" })
+{
+  _id: ObjectId('69d26d602eaf52a8bf8563c0'),
+  incident_id: 'INC-2025-001',
+  title: 'Brute force SSH sur srv-web-01',
+  description: 'Multiples tentatives SSH échouées depuis 192.168.1.105 ciblant root et admin.',
+  severity: 'high',
+  status: 'investigating',
+  created_at: ISODate('2025-03-03T10:30:00.000Z'),
+  updated_at: ISODate('2025-03-03T11:00:00.000Z'),
+  assigned_to: 'alice_analyst',
+  tags: [ 'brute-force', 'ssh', 'external' ],
+  related_log_ids: [
+    ObjectId('69d26cc62eaf52a8bf8563b8'),
+    ObjectId('69d26cc62eaf52a8bf8563b9'),
+    ObjectId('69d26cc62eaf52a8bf8563ba')
+  ],
+  comments: [
+    {
+      author: 'alice_analyst',
+      text: '3 tentatives en 2s depuis la même IP. Pattern brute-force confirmé.',
+      timestamp: ISODate('2025-03-03T10:35:00.000Z')
+    },
+    {
+      author: 'bob_senior',
+      text: 'IP bloquée au firewall. Surveiller si rebond depuis un autre vecteur.',
+      timestamp: ISODate('2025-03-03T10:50:00.000Z')
+    }
+  ],
+  mitre_tactics: [ 'TA0006' ],
+  mitre_techniques: [ 'T1110.001' ]
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.incidents.updateOne(
+|   { incident_id: "INC-2025-001" },
+|   {
+|     $push: { comments: {
+|       author: "diana_junior",
+|       text: "L'IP 192.168.1.105 appartient au sous-réseau visiteur. Aucun compte légitime.",
+|       timestamp: new Date()
+|     }},
+|     $set: { updated_at: new Date() }
+|   }
+| )
+{
+  acknowledged: true,
+  insertedId: null,
+  matchedCount: 1,
+  modifiedCount: 1,
+  upsertedCount: 0
+}
+soc_lite> db.incidents.findOne(
+|   { incident_id: "INC-2025-001" },
+|   { comments: 1, incident_id: 1 }
+| )
+{
+  _id: ObjectId('69d26d602eaf52a8bf8563c0'),
+  incident_id: 'INC-2025-001',
+  comments: [
+    {
+      author: 'alice_analyst',
+      text: '3 tentatives en 2s depuis la même IP. Pattern brute-force confirmé.',
+      timestamp: ISODate('2025-03-03T10:35:00.000Z')
+    },
+    {
+      author: 'bob_senior',
+      text: 'IP bloquée au firewall. Surveiller si rebond depuis un autre vecteur.',
+      timestamp: ISODate('2025-03-03T10:50:00.000Z')
+    },
+    {
+      author: 'diana_junior',
+      text: "L'IP 192.168.1.105 appartient au sous-réseau visiteur. Aucun compte légitime.",
+      timestamp: ISODate('2026-04-05T14:59:02.927Z')
+    }
+  ]
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.security_logs.insertMany([
+|   {
+|     timestamp: new Date("2025-03-03T17:00:00Z"),
+|     event_type: "login_failed",
+|     src_ip: "10.0.1.200", dst_ip: "10.0.0.5",
+|     src_port: 61300, dst_port: 443,
+|     protocol: "HTTPS", user_attempted: "charlie",
+|     device_id: "siem-console", severity: "medium",
+|     raw_log: "Failed login for charlie - account locked"
+|   },
+|   {
+|     timestamp: new Date("2025-03-03T17:00:05Z"),
+|     event_type: "login_failed",
+|     src_ip: "10.0.1.200", dst_ip: "10.0.0.5",
+|     src_port: 61305, dst_port: 443,
+|     protocol: "HTTPS", user_attempted: "charlie",
+|     device_id: "siem-console", severity: "medium",
+|     raw_log: "Failed login for charlie - account locked"
+|   },
+|   {
+|     timestamp: new Date("2025-03-03T17:01:00Z"),
+|     event_type: "privilege_escalation",
+|     src_ip: "10.0.1.200", dst_ip: "10.0.0.5",
+|     src_port: 61310, dst_port: 443,
+|     protocol: "HTTPS", user_attempted: "charlie",
+|     device_id: "siem-console", severity: "critical",
+|     raw_log: "Privilege escalation attempt detected for charlie"
+|   }
+| ])
+{
+  acknowledged: true,
+  insertedIds: {
+    '0': ObjectId('69d2790250b49af9ae8563b1'),
+    '1': ObjectId('69d2790250b49af9ae8563b2'),
+    '2': ObjectId('69d2790250b49af9ae8563b3')
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> let charlieLogIds = db.security_logs
+|   .find({
+|     src_ip: "10.0.1.200",
+|     timestamp: { $gte: new Date("2025-03-03T17:00:00Z") }
+|   })
+|   .toArray()
+|   .map(d => d._id);
+|
+| db.incidents.insertOne({
+|   incident_id: "INC-2025-003",
+|   title: "Tentative d'escalade de privilèges - charlie",
+|   description: "Échecs de connexion suivis d'une tentative d'escalade depuis 10.0.1.200.",
+|   severity: "critical",
+|   status: "new",
+|   created_at: new Date(),
+|   updated_at: new Date(),
+|   assigned_to: "alice_analyst",
+|   tags: ["privilege-escalation", "internal", "account-lockout"],
+|   related_log_ids: charlieLogIds,
+|   comments: [],
+|   mitre_tactics: ["TA0004"],
+|   mitre_techniques: ["T1078"]
+| });
+{
+  acknowledged: true,
+  insertedId: ObjectId('69d27b6c50b49af9ae8563b5')
+}
+
+
+
+
+
+
+
+
+
+
+soc_lite> let inc3 = db.incidents.findOne({ incident_id: "INC-2025-003" })
+| db.security_logs.find({ _id: { $in: inc3.related_log_ids } }).count()
+3
+
+
+soc_lite> db.incidents.updateOne(
+|   { incident_id: "INC-2025-002" },
+|   { $addToSet: { assigned_analysts: { $each: ["bob_senior","alice_analyst"] } }
+| })
+{
+  acknowledged: true,
+  insertedId: null,
+  matchedCount: 1,
+  modifiedCount: 1,
+  upsertedCount: 0
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.security_logs.find({ severity: "critical" })
+[
+  {
+    _id: ObjectId('69d26cc62eaf52a8bf8563bd'),
+    timestamp: ISODate('2025-03-03T14:22:10.000Z'),
+    event_type: 'malware_detected',
+    src_ip: '192.168.2.30',
+    dst_ip: '10.0.0.10',
+    src_port: 80,
+    dst_port: 8080,
+    protocol: 'HTTP',
+    user_attempted: null,
+    device_id: 'endpoint-pc-042',
+    severity: 'critical',
+    raw_log: 'Trojan.GenericKD.46543210 detected in /tmp/update.exe'
+  },
+  {
+    _id: ObjectId('69d26cc62eaf52a8bf8563bf'),
+    timestamp: ISODate('2025-03-03T16:45:00.000Z'),
+    event_type: 'data_exfiltration_suspect',
+    src_ip: '10.0.0.10',
+    dst_ip: '203.0.113.50',
+    src_port: 443,
+    dst_port: 443,
+    protocol: 'HTTPS',
+    user_attempted: null,
+    device_id: 'firewall-main',
+    severity: 'critical',
+    raw_log: 'Unusual outbound transfer 2.3GB to 203.0.113.50'
+  },
+  {
+    _id: ObjectId('69d2790250b49af9ae8563b3'),
+    timestamp: ISODate('2025-03-03T17:01:00.000Z'),
+    event_type: 'privilege_escalation',
+    src_ip: '10.0.1.200',
+    dst_ip: '10.0.0.5',
+    src_port: 61310,
+    dst_port: 443,
+    protocol: 'HTTPS',
+    user_attempted: 'charlie',
+    device_id: 'siem-console',
+    severity: 'critical',
+    raw_log: 'Privilege escalation attempt detected for charlie'
+  }
+]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.security_logs.find({
+|   timestamp: { $gte: new Date("2025-03-03T10:00:00Z"),
+|                $lte: new Date("2025-03-03T12:00:00Z") }
+| }).sort({ timestamp: 1 })
+[
+  {
+    _id: ObjectId('69d26cc62eaf52a8bf8563b8'),
+    timestamp: ISODate('2025-03-03T10:05:22.000Z'),
+    event_type: 'login_failed',
+    src_ip: '192.168.1.105',
+    dst_ip: '10.0.0.2',
+    src_port: 44821,
+    dst_port: 22,
+    protocol: 'SSH',
+    user_attempted: 'root',
+    device_id: 'srv-web-01',
+    severity: 'medium',
+    raw_log: 'Failed password for root from 192.168.1.105 port 44821 ssh2'
+  },
+  {
+    _id: ObjectId('69d26cc62eaf52a8bf8563b9'),
+    timestamp: ISODate('2025-03-03T10:05:23.000Z'),
+    event_type: 'login_failed',
+    src_ip: '192.168.1.105',
+    dst_ip: '10.0.0.2',
+    src_port: 44822,
+    dst_port: 22,
+    protocol: 'SSH',
+    user_attempted: 'root',
+    device_id: 'srv-web-01',
+    severity: 'medium',
+    raw_log: 'Failed password for root from 192.168.1.105 port 44822 ssh2'
+  },
+  {
+    _id: ObjectId('69d26cc62eaf52a8bf8563ba'),
+    timestamp: ISODate('2025-03-03T10:05:24.000Z'),
+    event_type: 'login_failed',
+    src_ip: '192.168.1.105',
+    dst_ip: '10.0.0.2',
+    src_port: 44823,
+    dst_port: 22,
+    protocol: 'SSH',
+    user_attempted: 'admin',
+    device_id: 'srv-web-01',
+    severity: 'medium',
+    raw_log: 'Failed password for admin from 192.168.1.105 port 44823 ssh2'
+  },
+  {
+    _id: ObjectId('69d26cc62eaf52a8bf8563bb'),
+    timestamp: ISODate('2025-03-03T10:12:00.000Z'),
+    event_type: 'login_success',
+    src_ip: '10.0.1.50',
+    dst_ip: '10.0.0.5',
+    src_port: 52100,
+    dst_port: 443,
+    protocol: 'HTTPS',
+    user_attempted: 'alice',
+    device_id: 'siem-console',
+    severity: 'info',
+    raw_log: 'Successful login for alice from 10.0.1.50'
+  },
+  {
+    _id: ObjectId('69d26cc62eaf52a8bf8563bc'),
+    timestamp: ISODate('2025-03-03T11:30:45.000Z'),
+    event_type: 'port_scan',
+    src_ip: '172.16.0.88',
+    dst_ip: '10.0.0.0/24',
+    src_port: null,
+    dst_port: null,
+    protocol: 'TCP',
+    user_attempted: null,
+    device_id: 'ids-sensor-02',
+    severity: 'high',
+    raw_log: 'Nmap SYN scan detected from 172.16.0.88 targeting 10.0.0.0/24'
+  }
+]
+
+
+
+
+
+
+
+
+soc_lite> db.security_logs.find(
+|   { event_type: "login_failed" },
+|   { src_ip: 1, user_attempted: 1, timestamp: 1, _id: 0 }
+| )
+[
+  {
+    timestamp: ISODate('2025-03-03T10:05:22.000Z'),
+    src_ip: '192.168.1.105',
+    user_attempted: 'root'
+  },
+  {
+    timestamp: ISODate('2025-03-03T10:05:23.000Z'),
+    src_ip: '192.168.1.105',
+    user_attempted: 'root'
+  },
+  {
+    timestamp: ISODate('2025-03-03T10:05:24.000Z'),
+    src_ip: '192.168.1.105',
+    user_attempted: 'admin'
+  },
+  {
+    timestamp: ISODate('2025-03-03T15:00:00.000Z'),
+    src_ip: '10.0.1.200',
+    user_attempted: 'charlie'
+  },
+  {
+    timestamp: ISODate('2025-03-03T17:00:00.000Z'),
+    src_ip: '10.0.1.200',
+    user_attempted: 'charlie'
+  },
+  {
+    timestamp: ISODate('2025-03-03T17:00:05.000Z'),
+    src_ip: '10.0.1.200',
+    user_attempted: 'charlie'
+  }
+]
+
+
+
+
+
+
+
+
+
+soc_lite> db.security_logs.find().sort({ timestamp: -1 }).limit(3)
+[
+  {
+    _id: ObjectId('69d2790250b49af9ae8563b3'),
+    timestamp: ISODate('2025-03-03T17:01:00.000Z'),
+    event_type: 'privilege_escalation',
+    src_ip: '10.0.1.200',
+    dst_ip: '10.0.0.5',
+    src_port: 61310,
+    dst_port: 443,
+    protocol: 'HTTPS',
+    user_attempted: 'charlie',
+    device_id: 'siem-console',
+    severity: 'critical',
+    raw_log: 'Privilege escalation attempt detected for charlie'
+  },
+  {
+    _id: ObjectId('69d2790250b49af9ae8563b2'),
+    timestamp: ISODate('2025-03-03T17:00:05.000Z'),
+    event_type: 'login_failed',
+    src_ip: '10.0.1.200',
+    dst_ip: '10.0.0.5',
+    src_port: 61305,
+    dst_port: 443,
+    protocol: 'HTTPS',
+    user_attempted: 'charlie',
+    device_id: 'siem-console',
+    severity: 'medium',
+    raw_log: 'Failed login for charlie - account locked'
+  },
+  {
+    _id: ObjectId('69d2790250b49af9ae8563b1'),
+    timestamp: ISODate('2025-03-03T17:00:00.000Z'),
+    event_type: 'login_failed',
+    src_ip: '10.0.1.200',
+    dst_ip: '10.0.0.5',
+    src_port: 61300,
+    dst_port: 443,
+    protocol: 'HTTPS',
+    user_attempted: 'charlie',
+    device_id: 'siem-console',
+    severity: 'medium',
+    raw_log: 'Failed login for charlie - account locked'
+  }
+]
+
+
+
+
+
+
+soc_lite> db.security_logs.find({
+|   $or: [ { src_ip: "192.168.1.105" }, { severity: "critical" } ]
+| })
+[
+  {
+    _id: ObjectId('69d26cc62eaf52a8bf8563b8'),
+    timestamp: ISODate('2025-03-03T10:05:22.000Z'),
+    event_type: 'login_failed',
+    src_ip: '192.168.1.105',
+    dst_ip: '10.0.0.2',
+    src_port: 44821,
+    dst_port: 22,
+    protocol: 'SSH',
+    user_attempted: 'root',
+    device_id: 'srv-web-01',
+    severity: 'medium',
+    raw_log: 'Failed password for root from 192.168.1.105 port 44821 ssh2'
+  },
+  {
+    _id: ObjectId('69d26cc62eaf52a8bf8563b9'),
+    timestamp: ISODate('2025-03-03T10:05:23.000Z'),
+    event_type: 'login_failed',
+    src_ip: '192.168.1.105',
+    dst_ip: '10.0.0.2',
+    src_port: 44822,
+    dst_port: 22,
+    protocol: 'SSH',
+    user_attempted: 'root',
+    device_id: 'srv-web-01',
+    severity: 'medium',
+    raw_log: 'Failed password for root from 192.168.1.105 port 44822 ssh2'
+  },
+  {
+    _id: ObjectId('69d26cc62eaf52a8bf8563ba'),
+    timestamp: ISODate('2025-03-03T10:05:24.000Z'),
+    event_type: 'login_failed',
+    src_ip: '192.168.1.105',
+    dst_ip: '10.0.0.2',
+    src_port: 44823,
+    dst_port: 22,
+    protocol: 'SSH',
+    user_attempted: 'admin',
+    device_id: 'srv-web-01',
+    severity: 'medium',
+    raw_log: 'Failed password for admin from 192.168.1.105 port 44823 ssh2'
+  },
+  {
+    _id: ObjectId('69d26cc62eaf52a8bf8563bd'),
+    timestamp: ISODate('2025-03-03T14:22:10.000Z'),
+    event_type: 'malware_detected',
+    src_ip: '192.168.2.30',
+    dst_ip: '10.0.0.10',
+    src_port: 80,
+    dst_port: 8080,
+    protocol: 'HTTP',
+    user_attempted: null,
+    device_id: 'endpoint-pc-042',
+    severity: 'critical',
+    raw_log: 'Trojan.GenericKD.46543210 detected in /tmp/update.exe'
+  },
+  {
+    _id: ObjectId('69d26cc62eaf52a8bf8563bf'),
+    timestamp: ISODate('2025-03-03T16:45:00.000Z'),
+    event_type: 'data_exfiltration_suspect',
+    src_ip: '10.0.0.10',
+    dst_ip: '203.0.113.50',
+    src_port: 443,
+    dst_port: 443,
+    protocol: 'HTTPS',
+    user_attempted: null,
+    device_id: 'firewall-main',
+    severity: 'critical',
+    raw_log: 'Unusual outbound transfer 2.3GB to 203.0.113.50'
+  },
+  {
+    _id: ObjectId('69d2790250b49af9ae8563b3'),
+    timestamp: ISODate('2025-03-03T17:01:00.000Z'),
+    event_type: 'privilege_escalation',
+    src_ip: '10.0.1.200',
+    dst_ip: '10.0.0.5',
+    src_port: 61310,
+    dst_port: 443,
+    protocol: 'HTTPS',
+    user_attempted: 'charlie',
+    device_id: 'siem-console',
+    severity: 'critical',
+    raw_log: 'Privilege escalation attempt detected for charlie'
+  }
+]
+
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.incidents.find(
+|   { status: { $in: ["active","investigating"] } },
+|   { incident_id: 1, title: 1, "comments.author": 1, "comments.text": 1, _id: 0 }
+| )
+[
+  {
+    incident_id: 'INC-2025-001',
+    title: 'Brute force SSH sur srv-web-01',
+    comments: [
+      {
+        author: 'alice_analyst',
+        text: '3 tentatives en 2s depuis la même IP. Pattern brute-force confirmé.'
+      },
+      {
+        author: 'bob_senior',
+        text: 'IP bloquée au firewall. Surveiller si rebond depuis un autre vecteur.'
+      },
+      {
+        author: 'diana_junior',
+        text: "L'IP 192.168.1.105 appartient au sous-réseau visiteur. Aucun compte légitime."
+      }
+    ]
+  },
+  {
+    incident_id: 'INC-2025-002',
+    title: 'Malware détecté sur endpoint-pc-042',
+    comments: [
+      {
+        author: 'bob_senior',
+        text: 'Isolement réseau du poste effectué. Analyse forensique en cours.'
+      }
+    ]
+  }
+]
+
+
+
+
+
+
+
+
+soc_lite> db.security_logs.find({ device_id: "siem-console" }).sort({ timestamp: -1 }).limit(5)
+[
+  {
+    _id: ObjectId('69d2790250b49af9ae8563b3'),
+    timestamp: ISODate('2025-03-03T17:01:00.000Z'),
+    event_type: 'privilege_escalation',
+    src_ip: '10.0.1.200',
+    dst_ip: '10.0.0.5',
+    src_port: 61310,
+    dst_port: 443,
+    protocol: 'HTTPS',
+    user_attempted: 'charlie',
+    device_id: 'siem-console',
+    severity: 'critical',
+    raw_log: 'Privilege escalation attempt detected for charlie'
+  },
+  {
+    _id: ObjectId('69d2790250b49af9ae8563b2'),
+    timestamp: ISODate('2025-03-03T17:00:05.000Z'),
+    event_type: 'login_failed',
+    src_ip: '10.0.1.200',
+    dst_ip: '10.0.0.5',
+    src_port: 61305,
+    dst_port: 443,
+    protocol: 'HTTPS',
+    user_attempted: 'charlie',
+    device_id: 'siem-console',
+    severity: 'medium',
+    raw_log: 'Failed login for charlie - account locked'
+  },
+  {
+    _id: ObjectId('69d2790250b49af9ae8563b1'),
+    timestamp: ISODate('2025-03-03T17:00:00.000Z'),
+    event_type: 'login_failed',
+    src_ip: '10.0.1.200',
+    dst_ip: '10.0.0.5',
+    src_port: 61300,
+    dst_port: 443,
+    protocol: 'HTTPS',
+    user_attempted: 'charlie',
+    device_id: 'siem-console',
+    severity: 'medium',
+    raw_log: 'Failed login for charlie - account locked'
+  },
+  {
+    _id: ObjectId('69d26cc62eaf52a8bf8563be'),
+    timestamp: ISODate('2025-03-03T15:00:00.000Z'),
+    event_type: 'login_failed',
+    src_ip: '10.0.1.200',
+    dst_ip: '10.0.0.5',
+    src_port: 61234,
+    dst_port: 443,
+    protocol: 'HTTPS',
+    user_attempted: 'charlie',
+    device_id: 'siem-console',
+    severity: 'low',
+    raw_log: 'Failed login for charlie - wrong password'
+  },
+  {
+    _id: ObjectId('69d26cc62eaf52a8bf8563bb'),
+    timestamp: ISODate('2025-03-03T10:12:00.000Z'),
+    event_type: 'login_success',
+    src_ip: '10.0.1.50',
+    dst_ip: '10.0.0.5',
+    src_port: 52100,
+    dst_port: 443,
+    protocol: 'HTTPS',
+    user_attempted: 'alice',
+    device_id: 'siem-console',
+    severity: 'info',
+    raw_log: 'Successful login for alice from 10.0.1.50'
+  }
+]
+
+
+
+
+
+
+
+
+soc_lite> db.incidents.find(
+|   { assigned_to: "alice_analyst" },
+|   { title: 1, severity: 1, _id: 0 }
+| )
+[
+  { title: 'Brute force SSH sur srv-web-01', severity: 'high' },
+  {
+    title: "Tentative d'escalade de privilèges - charlie",
+    severity: 'critical'
+  }
+]
+
+
+
+
+
+
+
+soc_lite> db.security_logs.aggregate([
+|   { $group: { _id: "$src_ip", count: { $sum: 1 } } },
+|   { $sort: { count: -1 } },
+|   { $limit: 5 }
+| ])
+[
+  { _id: '10.0.1.200', count: 4 },
+  { _id: '192.168.1.105', count: 3 },
+  { _id: '10.0.1.50', count: 1 },
+  { _id: '172.16.0.88', count: 1 },
+  { _id: '192.168.2.30', count: 1 }
+]
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.security_logs.aggregate([
+|   { $match: { event_type: "login_failed" } },
+|   { $group: {
+|       _id: "$user_attempted",
+|       failures: { $sum: 1 },
+|       last_attempt: { $max: "$timestamp" }
+|   }},
+|   { $sort: { failures: -1 } }
+| ])
+[
+  {
+    _id: 'charlie',
+    failures: 3,
+    last_attempt: ISODate('2025-03-03T17:00:05.000Z')
+  },
+  {
+    _id: 'root',
+    failures: 2,
+    last_attempt: ISODate('2025-03-03T10:05:23.000Z')
+  },
+  {
+    _id: 'admin',
+    failures: 1,
+    last_attempt: ISODate('2025-03-03T10:05:24.000Z')
+  }
+]
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.security_logs.aggregate([
+|   { $group: { _id: "$severity", count: { $sum: 1 } } },
+|   { $sort: { count: -1 } }
+| ])
+[
+  { _id: 'medium', count: 5 },
+  { _id: 'critical', count: 3 },
+  { _id: 'low', count: 1 },
+  { _id: 'info', count: 1 },
+  { _id: 'high', count: 1 }
+]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.security_logs.aggregate([
+|   { $match: { severity: { $in: ["high","critical"] } } },
+|   { $group: {
+|       _id: "$device_id",
+|       alert_count: { $sum: 1 },
+|       event_types: { $addToSet: "$event_type" }
+|   }},
+|   { $sort: { alert_count: -1 } }
+| ])
+[
+  { _id: 'ids-sensor-02', alert_count: 1, event_types: [ 'port_scan' ] },
+  {
+    _id: 'siem-console',
+    alert_count: 1,
+    event_types: [ 'privilege_escalation' ]
+  },
+  {
+    _id: 'endpoint-pc-042',
+    alert_count: 1,
+    event_types: [ 'malware_detected' ]
+  },
+  {
+    _id: 'firewall-main',
+    alert_count: 1,
+    event_types: [ 'data_exfiltration_suspect' ]
+  }
+]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.security_logs.aggregate([
+|   { $match: { timestamp: {
+|       $gte: new Date("2025-03-03T00:00:00Z"),
+|       $lt:  new Date("2025-03-04T00:00:00Z")
+|   }}},
+|   { $group: {
+|       _id: { $dateToString: { format: "%H:00", date: "$timestamp" } },
+|       count: { $sum: 1 }
+|   }},
+|   { $sort: { _id: 1 } }
+| ])
+[
+  { _id: '10:00', count: 4 },
+  { _id: '11:00', count: 1 },
+  { _id: '14:00', count: 1 },
+  { _id: '15:00', count: 1 },
+  { _id: '16:00', count: 1 },
+  { _id: '17:00', count: 3 }
+]
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.security_logs.find({ src_ip: "192.168.1.105" }).explain("executionStats")
+{
+  explainVersion: '1',
+  queryPlanner: {
+    namespace: 'soc_lite.security_logs',
+    indexFilterSet: false,
+    parsedQuery: { src_ip: { '$eq': '192.168.1.105' } },
+    queryHash: '02176B99',
+    planCacheKey: '02176B99',
+    optimizationTimeMillis: 0,
+    maxIndexedOrSolutionsReached: false,
+    maxIndexedAndSolutionsReached: false,
+    maxScansToExplodeReached: false,
+    winningPlan: {
+      stage: 'COLLSCAN',
+      filter: { src_ip: { '$eq': '192.168.1.105' } },
+      direction: 'forward'
+    },
+    rejectedPlans: []
+  },
+  executionStats: {
+    executionSuccess: true,
+    nReturned: 3,
+    executionTimeMillis: 2,
+    totalKeysExamined: 0,
+    totalDocsExamined: 11,
+    executionStages: {
+      stage: 'COLLSCAN',
+      filter: { src_ip: { '$eq': '192.168.1.105' } },
+      nReturned: 3,
+      executionTimeMillisEstimate: 0,
+      works: 12,
+      advanced: 3,
+      needTime: 8,
+      needYield: 0,
+      saveState: 0,
+      restoreState: 0,
+      isEOF: 1,
+      direction: 'forward',
+      docsExamined: 11
+    }
+  },
+  command: {
+    find: 'security_logs',
+    filter: { src_ip: '192.168.1.105' },
+    '$db': 'soc_lite'
+  },
+  serverInfo: {
+    host: '5bfcaadb0f86',
+    port: 27017,
+    version: '7.0.30',
+    gitVersion: '67480f41dfa5802ce14af5c95bd0e9826d3b2131'
+  },
+  serverParameters: {
+    internalQueryFacetBufferSizeBytes: 104857600,
+    internalQueryFacetMaxOutputDocSizeBytes: 104857600,
+    internalLookupStageIntermediateDocumentMaxSizeBytes: 104857600,
+    internalDocumentSourceGroupMaxMemoryBytes: 104857600,
+    internalQueryMaxBlockingSortMemoryUsageBytes: 104857600,
+    internalQueryProhibitBlockingMergeOnMongoS: 0,
+    internalQueryMaxAddToSetBytes: 104857600,
+    internalDocumentSourceSetWindowFieldsMaxMemoryBytes: 104857600,
+    internalQueryFrameworkControl: 'forceClassicEngine'
+  },
+  ok: 1
+}
+
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.security_logs.createIndex({ src_ip: 1 })
+src_ip_1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.security_logs.find({ src_ip: "192.168.1.105" }).explain("executionStats")
+{
+  explainVersion: '1',
+  queryPlanner: {
+    namespace: 'soc_lite.security_logs',
+    indexFilterSet: false,
+    parsedQuery: { src_ip: { '$eq': '192.168.1.105' } },
+    queryHash: '02176B99',
+    planCacheKey: 'F24EA511',
+    optimizationTimeMillis: 2,
+    maxIndexedOrSolutionsReached: false,
+    maxIndexedAndSolutionsReached: false,
+    maxScansToExplodeReached: false,
+    winningPlan: {
+      stage: 'FETCH',
+      inputStage: {
+        stage: 'IXSCAN',
+        keyPattern: { src_ip: 1 },
+        indexName: 'src_ip_1',
+        isMultiKey: false,
+        multiKeyPaths: { src_ip: [] },
+        isUnique: false,
+        isSparse: false,
+        isPartial: false,
+        indexVersion: 2,
+        direction: 'forward',
+        indexBounds: { src_ip: [ '["192.168.1.105", "192.168.1.105"]' ] }
+      }
+    },
+    rejectedPlans: []
+  },
+  executionStats: {
+    executionSuccess: true,
+    nReturned: 3,
+    executionTimeMillis: 3,
+    totalKeysExamined: 3,
+    totalDocsExamined: 3,
+    executionStages: {
+      stage: 'FETCH',
+      nReturned: 3,
+      executionTimeMillisEstimate: 4,
+      works: 4,
+      advanced: 3,
+      needTime: 0,
+      needYield: 0,
+      saveState: 0,
+      restoreState: 0,
+      isEOF: 1,
+      docsExamined: 3,
+      alreadyHasObj: 0,
+      inputStage: {
+        stage: 'IXSCAN',
+        nReturned: 3,
+        executionTimeMillisEstimate: 0,
+        works: 4,
+        advanced: 3,
+        needTime: 0,
+        needYield: 0,
+        saveState: 0,
+        restoreState: 0,
+        isEOF: 1,
+        keyPattern: { src_ip: 1 },
+        indexName: 'src_ip_1',
+        isMultiKey: false,
+        multiKeyPaths: { src_ip: [] },
+        isUnique: false,
+        isSparse: false,
+        isPartial: false,
+        indexVersion: 2,
+        direction: 'forward',
+        indexBounds: { src_ip: [ '["192.168.1.105", "192.168.1.105"]' ] },
+        keysExamined: 3,
+        seeks: 1,
+        dupsTested: 0,
+        dupsDropped: 0
+      }
+    }
+  },
+  command: {
+    find: 'security_logs',
+    filter: { src_ip: '192.168.1.105' },
+    '$db': 'soc_lite'
+  },
+  serverInfo: {
+    host: '5bfcaadb0f86',
+    port: 27017,
+    version: '7.0.30',
+    gitVersion: '67480f41dfa5802ce14af5c95bd0e9826d3b2131'
+  },
+  serverParameters: {
+    internalQueryFacetBufferSizeBytes: 104857600,
+    internalQueryFacetMaxOutputDocSizeBytes: 104857600,
+    internalLookupStageIntermediateDocumentMaxSizeBytes: 104857600,
+    internalDocumentSourceGroupMaxMemoryBytes: 104857600,
+    internalQueryMaxBlockingSortMemoryUsageBytes: 104857600,
+    internalQueryProhibitBlockingMergeOnMongoS: 0,
+    internalQueryMaxAddToSetBytes: 104857600,
+    internalDocumentSourceSetWindowFieldsMaxMemoryBytes: 104857600,
+    internalQueryFrameworkControl: 'forceClassicEngine'
+  },
+  ok: 1
+}
+
+
+
+
+
+
+
+
+soc_lite> db.security_logs.createIndex({ timestamp: 1, src_ip: 1 })
+timestamp_1_src_ip_1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.security_logs.find({
+|   timestamp: { $gte: new Date("2025-03-03T10:00:00Z"),
+|                $lte: new Date("2025-03-03T11:00:00Z") },
+|   src_ip: "192.168.1.105"
+| }).explain("executionStats")
+{
+  explainVersion: '1',
+  queryPlanner: {
+    namespace: 'soc_lite.security_logs',
+    indexFilterSet: false,
+    parsedQuery: {
+      '$and': [
+        { src_ip: { '$eq': '192.168.1.105' } },
+        { timestamp: { '$lte': ISODate('2025-03-03T11:00:00.000Z') } },
+        { timestamp: { '$gte': ISODate('2025-03-03T10:00:00.000Z') } }
+      ]
+    },
+    queryHash: '3F09282C',
+    planCacheKey: '4BC9DCFC',
+    optimizationTimeMillis: 3,
+    maxIndexedOrSolutionsReached: false,
+    maxIndexedAndSolutionsReached: false,
+    maxScansToExplodeReached: false,
+    winningPlan: {
+      stage: 'FETCH',
+      filter: {
+        '$and': [
+          {
+            timestamp: { '$lte': ISODate('2025-03-03T11:00:00.000Z') }
+          },
+          {
+            timestamp: { '$gte': ISODate('2025-03-03T10:00:00.000Z') }
+          }
+        ]
+      },
+      inputStage: {
+        stage: 'IXSCAN',
+        keyPattern: { src_ip: 1 },
+        indexName: 'src_ip_1',
+        isMultiKey: false,
+        multiKeyPaths: { src_ip: [] },
+        isUnique: false,
+        isSparse: false,
+        isPartial: false,
+        indexVersion: 2,
+        direction: 'forward',
+        indexBounds: { src_ip: [ '["192.168.1.105", "192.168.1.105"]' ] }
+      }
+    },
+    rejectedPlans: [
+      {
+        stage: 'FETCH',
+        inputStage: {
+          stage: 'IXSCAN',
+          keyPattern: { timestamp: 1, src_ip: 1 },
+          indexName: 'timestamp_1_src_ip_1',
+          isMultiKey: false,
+          multiKeyPaths: { timestamp: [], src_ip: [] },
+          isUnique: false,
+          isSparse: false,
+          isPartial: false,
+          indexVersion: 2,
+          direction: 'forward',
+          indexBounds: {
+            timestamp: [ '[new Date(1740996000000), new Date(1740999600000)]' ],
+            src_ip: [ '["192.168.1.105", "192.168.1.105"]' ]
+          }
+        }
+      }
+    ]
+  },
+  executionStats: {
+    executionSuccess: true,
+    nReturned: 3,
+    executionTimeMillis: 3,
+    totalKeysExamined: 3,
+    totalDocsExamined: 3,
+    executionStages: {
+      stage: 'FETCH',
+      filter: {
+        '$and': [
+          {
+            timestamp: { '$lte': ISODate('2025-03-03T11:00:00.000Z') }
+          },
+          {
+            timestamp: { '$gte': ISODate('2025-03-03T10:00:00.000Z') }
+          }
+        ]
+      },
+      nReturned: 3,
+      executionTimeMillisEstimate: 0,
+      works: 5,
+      advanced: 3,
+      needTime: 0,
+      needYield: 0,
+      saveState: 0,
+      restoreState: 0,
+      isEOF: 1,
+      docsExamined: 3,
+      alreadyHasObj: 0,
+      inputStage: {
+        stage: 'IXSCAN',
+        nReturned: 3,
+        executionTimeMillisEstimate: 0,
+        works: 4,
+        advanced: 3,
+        needTime: 0,
+        needYield: 0,
+        saveState: 0,
+        restoreState: 0,
+        isEOF: 1,
+        keyPattern: { src_ip: 1 },
+        indexName: 'src_ip_1',
+        isMultiKey: false,
+        multiKeyPaths: { src_ip: [] },
+        isUnique: false,
+        isSparse: false,
+        isPartial: false,
+        indexVersion: 2,
+        direction: 'forward',
+        indexBounds: { src_ip: [ '["192.168.1.105", "192.168.1.105"]' ] },
+        keysExamined: 3,
+        seeks: 1,
+        dupsTested: 0,
+        dupsDropped: 0
+      }
+    }
+  },
+  command: {
+    find: 'security_logs',
+    filter: {
+      timestamp: {
+        '$gte': ISODate('2025-03-03T10:00:00.000Z'),
+        '$lte': ISODate('2025-03-03T11:00:00.000Z')
+      },
+      src_ip: '192.168.1.105'
+    },
+    '$db': 'soc_lite'
+  },
+  serverInfo: {
+    host: '5bfcaadb0f86',
+    port: 27017,
+    version: '7.0.30',
+    gitVersion: '67480f41dfa5802ce14af5c95bd0e9826d3b2131'
+  },
+  serverParameters: {
+    internalQueryFacetBufferSizeBytes: 104857600,
+    internalQueryFacetMaxOutputDocSizeBytes: 104857600,
+    internalLookupStageIntermediateDocumentMaxSizeBytes: 104857600,
+    internalDocumentSourceGroupMaxMemoryBytes: 104857600,
+    internalQueryMaxBlockingSortMemoryUsageBytes: 104857600,
+    internalQueryProhibitBlockingMergeOnMongoS: 0,
+    internalQueryMaxAddToSetBytes: 104857600,
+    internalDocumentSourceSetWindowFieldsMaxMemoryBytes: 104857600,
+    internalQueryFrameworkControl: 'forceClassicEngine'
+  },
+  ok: 1
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.security_logs.getIndexes()
+[
+  { v: 2, key: { _id: 1 }, name: '_id_' },
+  { v: 2, key: { src_ip: 1 }, name: 'src_ip_1' },
+  {
+    v: 2,
+    key: { timestamp: 1, src_ip: 1 },
+    name: 'timestamp_1_src_ip_1'
+  }
+]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.security_logs.find({ src_ip: "10.0.1.200" }).explain("executionStats")
+{
+  explainVersion: '1',
+  queryPlanner: {
+    namespace: 'soc_lite.security_logs',
+    indexFilterSet: false,
+    parsedQuery: { src_ip: { '$eq': '10.0.1.200' } },
+    queryHash: '02176B99',
+    planCacheKey: 'B09EB1F8',
+    optimizationTimeMillis: 0,
+    maxIndexedOrSolutionsReached: false,
+    maxIndexedAndSolutionsReached: false,
+    maxScansToExplodeReached: false,
+    winningPlan: {
+      stage: 'FETCH',
+      inputStage: {
+        stage: 'IXSCAN',
+        keyPattern: { src_ip: 1 },
+        indexName: 'src_ip_1',
+        isMultiKey: false,
+        multiKeyPaths: { src_ip: [] },
+        isUnique: false,
+        isSparse: false,
+        isPartial: false,
+        indexVersion: 2,
+        direction: 'forward',
+        indexBounds: { src_ip: [ '["10.0.1.200", "10.0.1.200"]' ] }
+      }
+    },
+    rejectedPlans: []
+  },
+  executionStats: {
+    executionSuccess: true,
+    nReturned: 4,
+    executionTimeMillis: 0,
+    totalKeysExamined: 4,
+    totalDocsExamined: 4,
+    executionStages: {
+      stage: 'FETCH',
+      nReturned: 4,
+      executionTimeMillisEstimate: 0,
+      works: 5,
+      advanced: 4,
+      needTime: 0,
+      needYield: 0,
+      saveState: 0,
+      restoreState: 0,
+      isEOF: 1,
+      docsExamined: 4,
+      alreadyHasObj: 0,
+      inputStage: {
+        stage: 'IXSCAN',
+        nReturned: 4,
+        executionTimeMillisEstimate: 0,
+        works: 5,
+        advanced: 4,
+        needTime: 0,
+        needYield: 0,
+        saveState: 0,
+        restoreState: 0,
+        isEOF: 1,
+        keyPattern: { src_ip: 1 },
+        indexName: 'src_ip_1',
+        isMultiKey: false,
+        multiKeyPaths: { src_ip: [] },
+        isUnique: false,
+        isSparse: false,
+        isPartial: false,
+        indexVersion: 2,
+        direction: 'forward',
+        indexBounds: { src_ip: [ '["10.0.1.200", "10.0.1.200"]' ] },
+        keysExamined: 4,
+        seeks: 1,
+        dupsTested: 0,
+        dupsDropped: 0
+      }
+    }
+  },
+  command: {
+    find: 'security_logs',
+    filter: { src_ip: '10.0.1.200' },
+    '$db': 'soc_lite'
+  },
+  serverInfo: {
+    host: '5bfcaadb0f86',
+    port: 27017,
+    version: '7.0.30',
+    gitVersion: '67480f41dfa5802ce14af5c95bd0e9826d3b2131'
+  },
+  serverParameters: {
+    internalQueryFacetBufferSizeBytes: 104857600,
+    internalQueryFacetMaxOutputDocSizeBytes: 104857600,
+    internalLookupStageIntermediateDocumentMaxSizeBytes: 104857600,
+    internalDocumentSourceGroupMaxMemoryBytes: 104857600,
+    internalQueryMaxBlockingSortMemoryUsageBytes: 104857600,
+    internalQueryProhibitBlockingMergeOnMongoS: 0,
+    internalQueryMaxAddToSetBytes: 104857600,
+    internalDocumentSourceSetWindowFieldsMaxMemoryBytes: 104857600,
+    internalQueryFrameworkControl: 'forceClassicEngine'
+  },
+  ok: 1
+}
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.security_logs.findOne({ event_type: "malware_detected" })
+{
+  _id: ObjectId('69d26cc62eaf52a8bf8563bd'),
+  timestamp: ISODate('2025-03-03T14:22:10.000Z'),
+  event_type: 'malware_detected',
+  src_ip: '192.168.2.30',
+  dst_ip: '10.0.0.10',
+  src_port: 80,
+  dst_port: 8080,
+  protocol: 'HTTP',
+  user_attempted: null,
+  device_id: 'endpoint-pc-042',
+  severity: 'critical',
+  raw_log: 'Trojan.GenericKD.46543210 detected in /tmp/update.exe'
+}
+
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.users.updateMany({}, [
+|   { $set: { email_masked: {
+|       $concat: [
+|         { $substr: ["$email", 0, 1] },
+|         "***@",
+|         { $arrayElemAt: [{ $split: ["$email","@"] }, 1] }
+|       ]
+|   }}}
+| ])
+{
+  acknowledged: true,
+  insertedId: null,
+  matchedCount: 4,
+  modifiedCount: 4,
+  upsertedCount: 0
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.users.find({}, { username: 1, email: 1, email_masked: 1, _id: 0 })
+[
+  {
+    username: 'alice_analyst',
+    email: 'alice@soc.local',
+    email_masked: 'a***@soc.local'
+  },
+  {
+    username: 'bob_senior',
+    email: 'bob@soc.local',
+    email_masked: 'b***@soc.local'
+  },
+  {
+    username: 'charlie_admin',
+    email: 'charlie@soc.local',
+    email_masked: 'c***@soc.local'
+  },
+  {
+    username: 'diana_junior',
+    email: 'diana@soc.local',
+    email_masked: 'd***@soc.local'
+  }
+]
+
+
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.users.find(
+|   { is_active: true },
+|   { username: 1, team: 1, roles: 1, email_masked: 1, _id: 0 }
+| )
+[
+  {
+    username: 'alice_analyst',
+    roles: [ 'analyst', 'viewer' ],
+    team: 'Blue Team',
+    email_masked: 'a***@soc.local'
+  },
+  {
+    username: 'bob_senior',
+    roles: [ 'senior_analyst', 'incident_manager' ],
+    team: 'Blue Team',
+    email_masked: 'b***@soc.local'
+  },
+  {
+    username: 'charlie_admin',
+    roles: [ 'admin' ],
+    team: 'SOC Management',
+    email_masked: 'c***@soc.local'
+  },
+  {
+    username: 'diana_junior',
+    roles: [ 'viewer' ],
+    team: 'Blue Team',
+    email_masked: 'd***@soc.local'
+  }
+]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.security_logs.find(
+|   { severity: "critical" },
+|   { raw_log: 0 }
+| )
+[
+  {
+    _id: ObjectId('69d26cc62eaf52a8bf8563bd'),
+    timestamp: ISODate('2025-03-03T14:22:10.000Z'),
+    event_type: 'malware_detected',
+    src_ip: '192.168.2.30',
+    dst_ip: '10.0.0.10',
+    src_port: 80,
+    dst_port: 8080,
+    protocol: 'HTTP',
+    user_attempted: null,
+    device_id: 'endpoint-pc-042',
+    severity: 'critical'
+  },
+  {
+    _id: ObjectId('69d26cc62eaf52a8bf8563bf'),
+    timestamp: ISODate('2025-03-03T16:45:00.000Z'),
+    event_type: 'data_exfiltration_suspect',
+    src_ip: '10.0.0.10',
+    dst_ip: '203.0.113.50',
+    src_port: 443,
+    dst_port: 443,
+    protocol: 'HTTPS',
+    user_attempted: null,
+    device_id: 'firewall-main',
+    severity: 'critical'
+  },
+  {
+    _id: ObjectId('69d2790250b49af9ae8563b3'),
+    timestamp: ISODate('2025-03-03T17:01:00.000Z'),
+    event_type: 'privilege_escalation',
+    src_ip: '10.0.1.200',
+    dst_ip: '10.0.0.5',
+    src_port: 61310,
+    dst_port: 443,
+    protocol: 'HTTPS',
+    user_attempted: 'charlie',
+    device_id: 'siem-console',
+    severity: 'critical'
+  }
+]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.ids_alerts.insertMany([
+|   { timestamp: new Date("2025-03-04T08:00:00Z"), rule_id: "SID-1001",
+|     rule_name: "SQL Injection Attempt", src_ip: "203.0.113.15",
+|     dst_ip: "10.0.0.5", severity: "high", action: "alert", sensor: "ids-dmz-01" },
+|   { timestamp: new Date("2025-03-04T08:05:00Z"), rule_id: "SID-1001",
+|     rule_name: "SQL Injection Attempt", src_ip: "203.0.113.15",
+|     dst_ip: "10.0.0.5", severity: "high", action: "alert", sensor: "ids-dmz-01" },
+|   { timestamp: new Date("2025-03-04T09:00:00Z"), rule_id: "SID-2050",
+|     rule_name: "DNS Tunneling Detected", src_ip: "10.0.2.100",
+|     dst_ip: "8.8.8.8", severity: "critical", action: "block", sensor: "ids-internal-01" },
+|   { timestamp: new Date("2025-03-04T10:30:00Z"), rule_id: "SID-3001",
+|     rule_name: "Suspicious Outbound Connection", src_ip: "10.0.0.10",
+|     dst_ip: "198.51.100.77", severity: "medium", action: "alert", sensor: "ids-internal-01" },
+|   { timestamp: new Date("2025-03-04T11:00:00Z"), rule_id: "SID-1001",
+|     rule_name: "SQL Injection Attempt", src_ip: "203.0.113.15",
+|     dst_ip: "10.0.0.5", severity: "high", action: "drop", sensor: "ids-dmz-01" }
+| ])
+{
+  acknowledged: true,
+  insertedIds: {
+    '0': ObjectId('69d7e9d56d510e0cfd8563b1'),
+    '1': ObjectId('69d7e9d56d510e0cfd8563b2'),
+    '2': ObjectId('69d7e9d56d510e0cfd8563b3'),
+    '3': ObjectId('69d7e9d56d510e0cfd8563b4'),
+    '4': ObjectId('69d7e9d56d510e0cfd8563b5')
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.ids_alerts.find({
+|   severity: { $in: ["high", "critical"] }
+| })
+[
+  {
+    _id: ObjectId('69d7e9d56d510e0cfd8563b1'),
+    timestamp: ISODate('2025-03-04T08:00:00.000Z'),
+    rule_id: 'SID-1001',
+    rule_name: 'SQL Injection Attempt',
+    src_ip: '203.0.113.15',
+    dst_ip: '10.0.0.5',
+    severity: 'high',
+    action: 'alert',
+    sensor: 'ids-dmz-01'
+  },
+  {
+    _id: ObjectId('69d7e9d56d510e0cfd8563b2'),
+    timestamp: ISODate('2025-03-04T08:05:00.000Z'),
+    rule_id: 'SID-1001',
+    rule_name: 'SQL Injection Attempt',
+    src_ip: '203.0.113.15',
+    dst_ip: '10.0.0.5',
+    severity: 'high',
+    action: 'alert',
+    sensor: 'ids-dmz-01'
+  },
+  {
+    _id: ObjectId('69d7e9d56d510e0cfd8563b3'),
+    timestamp: ISODate('2025-03-04T09:00:00.000Z'),
+    rule_id: 'SID-2050',
+    rule_name: 'DNS Tunneling Detected',
+    src_ip: '10.0.2.100',
+    dst_ip: '8.8.8.8',
+    severity: 'critical',
+    action: 'block',
+    sensor: 'ids-internal-01'
+  },
+  {
+    _id: ObjectId('69d7e9d56d510e0cfd8563b5'),
+    timestamp: ISODate('2025-03-04T11:00:00.000Z'),
+    rule_id: 'SID-1001',
+    rule_name: 'SQL Injection Attempt',
+    src_ip: '203.0.113.15',
+    dst_ip: '10.0.0.5',
+    severity: 'high',
+    action: 'drop',
+    sensor: 'ids-dmz-01'
+  }
+]
+
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.ids_alerts.find({
+|   rule_id: "SID-1001"
+| }).sort({ timestamp: 1 })
+[
+  {
+    _id: ObjectId('69d7e9d56d510e0cfd8563b1'),
+    timestamp: ISODate('2025-03-04T08:00:00.000Z'),
+    rule_id: 'SID-1001',
+    rule_name: 'SQL Injection Attempt',
+    src_ip: '203.0.113.15',
+    dst_ip: '10.0.0.5',
+    severity: 'high',
+    action: 'alert',
+    sensor: 'ids-dmz-01'
+  },
+  {
+    _id: ObjectId('69d7e9d56d510e0cfd8563b2'),
+    timestamp: ISODate('2025-03-04T08:05:00.000Z'),
+    rule_id: 'SID-1001',
+    rule_name: 'SQL Injection Attempt',
+    src_ip: '203.0.113.15',
+    dst_ip: '10.0.0.5',
+    severity: 'high',
+    action: 'alert',
+    sensor: 'ids-dmz-01'
+  },
+  {
+    _id: ObjectId('69d7e9d56d510e0cfd8563b5'),
+    timestamp: ISODate('2025-03-04T11:00:00.000Z'),
+    rule_id: 'SID-1001',
+    rule_name: 'SQL Injection Attempt',
+    src_ip: '203.0.113.15',
+    dst_ip: '10.0.0.5',
+    severity: 'high',
+    action: 'drop',
+    sensor: 'ids-dmz-01'
+  }
+]
+
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.ids_alerts.aggregate([
+|   {
+|     $group: {
+|       _id: "$rule_id",
+|       count: { $sum: 1 }
+|     }
+|   },
+|   { $sort: { count: -1 } }
+| ])
+[
+  { _id: 'SID-1001', count: 3 },
+  { _id: 'SID-2050', count: 1 },
+  { _id: 'SID-3001', count: 1 }
+]
+
+
+
+
+
+
+
+
+
+
+
+db.ids_alerts.find(
+  {
+    timestamp: {
+      $gte: new Date("2025-03-04T08:00:00Z"),
+      $lte: new Date("2025-03-04T10:00:00Z")
+    }
+  },
+  {
+    src_ip: 1,
+    rule_name: 1,
+    timestamp: 1,
+    _id: 0
+  }
+)
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.ids_alerts.find(
+|   {
+|     timestamp: {
+|       $gte: new Date("2025-03-04T08:00:00Z"),
+|       $lte: new Date("2025-03-04T10:00:00Z")
+|     }
+|   },
+|   {
+|     src_ip: 1,
+|     rule_name: 1,
+|     timestamp: 1,
+|     _id: 0
+|   }
+| )
+[
+  {
+    timestamp: ISODate('2025-03-04T08:00:00.000Z'),
+    rule_name: 'SQL Injection Attempt',
+    src_ip: '203.0.113.15'
+  },
+  {
+    timestamp: ISODate('2025-03-04T08:05:00.000Z'),
+    rule_name: 'SQL Injection Attempt',
+    src_ip: '203.0.113.15'
+  },
+  {
+    timestamp: ISODate('2025-03-04T09:00:00.000Z'),
+    rule_name: 'DNS Tunneling Detected',
+    src_ip: '10.0.2.100'
+  }
+]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.ids_alerts.find().sort({ timestamp: -1 }).limit(2)
+[
+  {
+    _id: ObjectId('69d7e9d56d510e0cfd8563b5'),
+    timestamp: ISODate('2025-03-04T11:00:00.000Z'),
+    rule_id: 'SID-1001',
+    rule_name: 'SQL Injection Attempt',
+    src_ip: '203.0.113.15',
+    dst_ip: '10.0.0.5',
+    severity: 'high',
+    action: 'drop',
+    sensor: 'ids-dmz-01'
+  },
+  {
+    _id: ObjectId('69d7e9d56d510e0cfd8563b4'),
+    timestamp: ISODate('2025-03-04T10:30:00.000Z'),
+    rule_id: 'SID-3001',
+    rule_name: 'Suspicious Outbound Connection',
+    src_ip: '10.0.0.10',
+    dst_ip: '198.51.100.77',
+    severity: 'medium',
+    action: 'alert',
+    sensor: 'ids-internal-01'
+  }
+]
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.ids_alerts.aggregate([
+|   {
+|     $group: {
+|       _id: "$src_ip",
+|       count: { $sum: 1 }
+|     }
+|   },
+|   { $sort: { count: -1 } },
+|   { $limit: 5 }
+| ])
+[
+  { _id: '203.0.113.15', count: 3 },
+  { _id: '10.0.2.100', count: 1 },
+  { _id: '10.0.0.10', count: 1 }
+]
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.ids_alerts.find({
+|   action: { $in: ["block", "drop"] }
+| })
+[
+  {
+    _id: ObjectId('69d7e9d56d510e0cfd8563b3'),
+    timestamp: ISODate('2025-03-04T09:00:00.000Z'),
+    rule_id: 'SID-2050',
+    rule_name: 'DNS Tunneling Detected',
+    src_ip: '10.0.2.100',
+    dst_ip: '8.8.8.8',
+    severity: 'critical',
+    action: 'block',
+    sensor: 'ids-internal-01'
+  },
+  {
+    _id: ObjectId('69d7e9d56d510e0cfd8563b5'),
+    timestamp: ISODate('2025-03-04T11:00:00.000Z'),
+    rule_id: 'SID-1001',
+    rule_name: 'SQL Injection Attempt',
+    src_ip: '203.0.113.15',
+    dst_ip: '10.0.0.5',
+    severity: 'high',
+    action: 'drop',
+    sensor: 'ids-dmz-01'
+  }
+]
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.ids_alerts.aggregate([
+|   {
+|     $group: {
+|       _id: "$sensor",
+|       count: { $sum: 1 }
+|     }
+|   },
+|   { $sort: { count: -1 } }
+| ])
+[
+  { _id: 'ids-dmz-01', count: 3 },
+  { _id: 'ids-internal-01', count: 2 }
+]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.ids_alerts.find(
+|   {
+|     severity: "critical",
+|     $expr: {
+|       $eq: [
+|         { $substrBytes: ["$src_ip", 0, 3] },
+|         "10."
+|       ]
+|     }
+|   }
+| )
+[
+  {
+    _id: ObjectId('69d7e9d56d510e0cfd8563b3'),
+    timestamp: ISODate('2025-03-04T09:00:00.000Z'),
+    rule_id: 'SID-2050',
+    rule_name: 'DNS Tunneling Detected',
+    src_ip: '10.0.2.100',
+    dst_ip: '8.8.8.8',
+    severity: 'critical',
+    action: 'block',
+    sensor: 'ids-internal-01'
+  }
+]
+
+
+
+
+
+
+
+
+
+
+soc_lite> db.ids_alerts.find().sort({ timestamp: 1 }).limit(1)
+[
+  {
+    _id: ObjectId('69d7e9d56d510e0cfd8563b1'),
+    timestamp: ISODate('2025-03-04T08:00:00.000Z'),
+    rule_id: 'SID-1001',
+    rule_name: 'SQL Injection Attempt',
+    src_ip: '203.0.113.15',
+    dst_ip: '10.0.0.5',
+    severity: 'high',
+    action: 'alert',
+    sensor: 'ids-dmz-01'
+  }
+]
+
+
