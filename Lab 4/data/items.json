@@ -1,0 +1,8 @@
+{"_id":{"$oid":"6a29b9c674555d9f1144ba89"},"kind":"user","username":"alice","password":"motdepasse123","role":"analyst","email":"alice@soc.local"}
+{"_id":{"$oid":"6a29b9c674555d9f1144ba8a"},"kind":"user","username":"bob","password":"secret456","role":"admin","email":"bob@soc.local"}
+{"_id":{"$oid":"6a29b9c674555d9f1144ba8b"},"kind":"user","username":"carol","password":"carol789","role":"viewer","email":"carol.new@soc.local"}
+{"_id":{"$oid":"6a29b9c674555d9f1144ba8c"},"kind":"log","ts":{"$date":"2026-06-10T08:00:00Z"},"src_ip":"192.168.1.10","action":"login","status":"open","severity":"medium","password_hash":"HASH_FICTIF_SENSIBLE","internal_note":"ticket_17_confidentiel"}
+{"_id":{"$oid":"6a29b9c674555d9f1144ba8d"},"kind":"log","ts":{"$date":"2026-06-10T08:04:00Z"},"src_ip":"192.168.1.15","action":"scan","status":"investigating","severity":"high","password_hash":"HASH_FICTIF_SENSIBLE_2","internal_note":"possible reconnaissance"}
+{"_id":{"$oid":"6a29b9c674555d9f1144ba8e"},"kind":"log","ts":{"$date":"2026-06-10T08:10:00Z"},"src_ip":"10.0.0.8","action":"failed_login","status":"open","severity":"low","internal_note":"3 failed attempts"}
+{"_id":{"$oid":"6a29b9c674555d9f1144ba8f"},"kind":"log","ts":{"$date":"2026-06-10T08:20:00Z"},"src_ip":"172.16.2.20","action":"malware_alert","status":"closed","severity":"critical","internal_note":"quarantined"}
+{"_id":{"$oid":"6a29b9c674555d9f1144ba90"},"kind":"log","ts":{"$date":"2026-06-10T08:30:00Z"},"src_ip":"192.168.1.10","action":"privilege_change","status":"investigating","severity":"critical","internal_note":"role escalation suspected"}
